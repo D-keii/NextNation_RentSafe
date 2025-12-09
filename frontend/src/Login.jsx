@@ -26,7 +26,8 @@ export default function Login(){
         },
     ];
 
-    const loginSteps = ["Click Login with MyDigital ID",
+    const loginSteps = [
+                        "Click Login with MyDigital ID",
                         "Verify your identity in the MyDigital ID app",
                         "Complete your profile and start renting"
                     ]
@@ -34,12 +35,12 @@ export default function Login(){
     const navigate = useNavigate()
 
     return(
-        <div>
-            <header className="container p-6">
+        <div className="flex flex-col w-[90%] pt-[50px] items-center justify-center mx-auto">
+            <header className="container">
                 <Logo size="lg"/>
             </header>
-            <div className="flex flex-col md:flex-row items-center justify-center gap-8 py-12 w-[90%] mx-auto">
-                <div className="flex flex-col gap-5">
+            <div className="flex flex-col md:flex-row gap-8 justify-center items-center mx-auto w-full py-20">
+                <div className="flex-1 flex flex-col gap-5">
                     <span className="text-4xl md:text-5xl font-bold leading-tight">Rent With <span className="text-accent">Confidence</span></span>
                     <p className="text-lg text-muted-foreground max-w-md">Malaysia's trusted rental platform with verified identities, secure escrow, and digital contracts.</p>
                     <div className="grid sm:grid-cols-2 gap-4">
@@ -56,10 +57,10 @@ export default function Login(){
                         }
                    </div>
                 </div>
-                <div className="flex-1 bg-white px-8 md:px-20 py-10 rounded-md shadow-sm flex flex-col items-center justify-center gap-5 w-full">
+                <div className="flex-1 bg-white px-8 md:px-5 py-10 rounded-md shadow-sm flex flex-col items-center justify-center gap-5 w-full">
                     <p className="text-3xl whitespace-nowrap font-bold leading-none tracking-tight">Welcome to RentSafe</p>
                     <p className="text-md text-muted-foreground">Sign in securely with your MyDigital ID</p>
-                    <button onClick={()=>navigate("/mock-mydigital") }className="w-full font-bold whitespace-nowrap gradient-primary flex items-center justify-center gap-3 py-3 px-6 rounded-md text-white cursor-pointer transform transition-transform duration-200 hover:scale-105 active:scale-95">
+                    <button onClick={()=>navigate("/mock-mydigital") }className="w-full font-bold whitespace-nowrap gradient-primary flex items-center justify-center gap-3 py-3 px-6 rounded-md text-white text-sm cursor-pointer transform transition-transform duration-200 hover:scale-105 active:scale-95">
                         <Shield className="h-5 w-5" />
                         Login with MyDigital ID
                     </button>
