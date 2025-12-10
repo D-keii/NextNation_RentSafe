@@ -21,3 +21,32 @@ class User(db.Model):
             "age": self.age,
             "gender": self.gender,
         }
+
+# Tenant Dashboard
+class Listing(db.Model):
+    __tablename__ = "listings"
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200))
+    location = db.Column(db.String(200))
+    monthly_rental = db.Column(db.Integer)
+    no_bed = db.Column(db.Integer)
+    no_toilet = db.Column(db.Integer)
+    sqft = db.Column(db.Integer)
+    image_url = db.Column(db.String(300))
+
+class SavedListing(db.Model):
+    __tablename__= "saved_listings"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"))
+
+class TenantPreference(db.Model):
+    __tablename__ = "tenant_preferences"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+
+    preferred_location = db.Column(db.String(200), nullable=True)
+    min_rent = db.Column(db.Integer, nullable=True)
+    max_rent = db.Column(db.Integer, nullable=True)
+    min_bedrooms = db.Column(db.Integer, nullable=True)
+

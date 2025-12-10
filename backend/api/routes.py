@@ -1,7 +1,7 @@
 from flask import request, url_for, jsonify, redirect, render_template_string
 from . import api_bp
 from db.db import db
-from db.db_tables import User
+from db.db_tables import User, TenantPreference, Listing, SavedListing
 # Genrate unique session id
 import uuid
 import json
@@ -101,3 +101,54 @@ def register_role():
     user.role = role
     db.session.commit()
     return jsonify({"message": "Role updated", "role": user.role})
+
+# tenant get recommend lsiting based on pref
+@api_bp.get("/listings/recommended")
+def get_recommended():
+    user_id = request.args.get("user_id")
+
+    prefs = TenantPreference.query.filter_by(user_id=user_id).first()
+
+    query = Listing.query
+
+    if prefs:
+        if prefs.preferred_location:
+            query = query.filter_by(location=prefs.preferred_location)
+        if prefs.min_rent:
+            query = query.filter(Listing.monthly_rental >= prefs.min_rent)
+        if prefs.max_rent:
+            query = query.filter(Listing.monthly_rental <= prefs.max_rent)
+        if prefs.min_bedrooms:
+            query = query.filter(Listing.no_bed >= prefs.min_bedrooms)
+
+    results = query.limit(10).all()
+
+    return jsonify([{
+        "id": l.id,
+        "name": l.name,
+        "location": l.location,
+        "monthlyRental": l.monthly_rental,
+        "noOfBed": l.no_bed,
+        "noOfToilet": l.no_toilet,
+        "noOfSqft": l.sqft,
+        "imageUrl": l.image_url
+    } for l in results])
+
+@api_bp.post("/listings/save")
+def save_listing():
+    data = request.json
+    user_id = data["user_id"]
+    listing_id = data["listing_id"]
+
+    saved = SavedListing.query.filter_by(user_id=user_id, listing_id=listing_id).first()
+
+    if saved:
+        db.session.delete(saved)
+        db.session.commit()
+        return jsonify({"message": "Removed from saved listings"})
+
+    new_saved = SavedListing(user_id=user_id, listing_id=listing_id)
+    db.session.add(new_saved)
+    db.session.commit()
+
+    return jsonify({"message": "Added to saved listings"})
