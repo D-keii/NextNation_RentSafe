@@ -1,4 +1,4 @@
-from db import db
+from db.db import db
 from sqlalchemy import UniqueConstraint
 from sqlalchemy import func
 from datetime import datetime
