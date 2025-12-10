@@ -50,3 +50,11 @@ class TenantPreference(db.Model):
     max_rent = db.Column(db.Integer, nullable=True)
     min_bedrooms = db.Column(db.Integer, nullable=True)
 
+# Tenant apply to rent
+class RentalApplication(db.Model):
+    __tablename__ = "rental_applications"
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"))
+    apply_date = db.Column(db.Date)
+    status = db.Column(db.String(50))

@@ -1,7 +1,7 @@
 from flask import request, url_for, jsonify, redirect, render_template_string
 from . import api_bp
 from db.db import db
-from db.db_tables import User, TenantPreference, Listing, SavedListing
+from db.db_tables import User, TenantPreference, Listing, SavedListing, RentalApplication
 # Genrate unique session id
 import uuid
 import json
@@ -134,6 +134,7 @@ def get_recommended():
         "imageUrl": l.image_url
     } for l in results])
 
+# Tenant get to favourite the listing and also remove from fav
 @api_bp.post("/listings/save")
 def save_listing():
     data = request.json
@@ -152,3 +153,44 @@ def save_listing():
     db.session.commit()
 
     return jsonify({"message": "Added to saved listings"})
+
+# Create rental application
+@api_bp.route("/applications/create", methods=["POST"])
+def create_application():
+    data = request.get_json()
+
+    tenant_ic = data.get("tenant_ic")
+    property_id = data.get("property_id")
+    message = data.get("message")
+
+    # 1. Ensure user exists (already verified via MyDigitalID)
+    tenant = User.query.filter_by(ic=tenant_ic).first()
+    if not tenant:
+        return jsonify({"error": "Tenant not found. User must login first."}), 404
+
+    # 2. Create application record
+    application = RentalApplication(
+        tenant_ic = tenant_ic,
+        property_id = property_id,
+        message = message
+    )
+    db.session.add(application)
+    db.session.commit()
+
+    return jsonify({
+        "message": "Application created",
+        "application_id": application.id
+    })
+
+# Get all the applications by the tenant
+@api_bp.route("/applications/<tenant_ic>", methods=["GET"])
+def get_applications(tenant_ic):
+    apps = RentalApplication.query.filter_by(tenant_ic=tenant_ic).all()
+
+    return jsonify([{
+        "application_id": a.id,
+        "tenant_ic": a.tenant_ic,
+        "property_id": a.property_id,
+        "message": a.message,
+        "status": a.status
+    } for a in apps])
