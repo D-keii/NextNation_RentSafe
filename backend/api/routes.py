@@ -1,7 +1,7 @@
 from flask import request, url_for, jsonify, redirect, render_template_string
 from . import api_bp
 from db.db import db
-from db.db_tables import Tenant
+from db.db_tables import User
 # Genrate unique session id
 import uuid
 import json
@@ -19,6 +19,8 @@ def login_mydigitalid():
         "name": "NextNation",
         "ic": "000000-00-0000",
         "email": "next_nation@gmail.com",
+        "age": 25,
+        "gender": "Male",
         "verified": True
     }
 
@@ -29,4 +31,51 @@ def login_mydigitalid():
     )
     return jsonify({"redirect_url": redirect_url})
 
+# Mock Mydigitalid page
+@api_bp.route("/mock/mydigitalid", methods=["GET"])
+def mock_mydigitalid_page():
+    session_id = request.args.get("session")
+    if session_id not in MOCK_TOKENS:
+        return "Invalid session", 400
 
+    user = MOCK_TOKENS[session_id]
+    html = f"""
+        <html>
+        <body>
+            <h2>Mock MyDigitalID Login</h2>
+            <p>Name: {user['name']}</p>
+            <p>IC: {user['ic']}</p>
+            <p>Email: {user['email']}</p>
+            <p>Age: {user['age']}</p>
+            <p>Gender: {user['gender']}</p>
+            <form action="{url_for('api_bp.callback')}" method="GET">
+                <input type="hidden" name="token" value="{session_id}">
+                <button type="submit">Approve</button>
+            </form>
+        </body>
+        </html>
+        """
+    return html
+
+# Callback
+@api_bp.route("/auth/callback", methods=["GET"])
+def callback():
+    token = request.args.get("token")
+    if token not in MOCK_TOKENS:
+        return jsonify({"error": "Invalid token"}), 400
+    profile = MOCK_TOKENS[token]
+
+    existing = User.query.filter_by(email=profile["email"]).first()
+    if not existing:
+        user = User(email=profile["ic"], name=profile["name"], age=profile["age"], gender=profile["gender"])
+        db.session.add(user)
+        db.session.commit()
+        user_id = user.id
+    else:
+        user_id = existing.id
+
+    return jsonify({
+        "message": "MyDigitalID verified",
+        "profile": profile,
+        "user_id": user_id
+    })

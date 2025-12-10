@@ -4,7 +4,7 @@ from sqlalchemy import func
 from datetime import datetime
 
 
-class Tenant(db.Model):
+class User(db.Model):
     __tablename__ = "tenants"
     id = db.Column(db.Integer, primary_key = True)
     ic = db.Column(db.String(20), unique=True, nullable=False)
