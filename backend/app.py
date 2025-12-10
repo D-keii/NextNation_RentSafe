@@ -22,7 +22,7 @@ CORS(app)
 def home():
     return jsonify({"message": "RentSafe Backend is running!"})
 
-# 1. CREATE Property
+# 1. CREATE Property 
 @app.route('/properties/create', methods=['POST'])
 def add_property():
     data = request.get_json()
@@ -34,9 +34,16 @@ def add_property():
     new_property = Property(
         title=data['title'],
         description=data.get('description', ''),
-        location=data['location'],
+        location=data.get('location', data.get('address')), # Handle both names
         price=data['price'],
-        landlord_ic=data['landlord_ic']
+        landlord_ic=data.get('landlord_ic', 'UNKNOWN'), # Default if missing
+        
+        # Capture new fields from frontend (with defaults if they don't send them)
+        bedrooms=data.get('noOfBed', data.get('bedrooms', 1)),
+        bathrooms=data.get('noOfToilet', data.get('bathrooms', 1)),
+        size_sqft=data.get('noOfSqft', data.get('size_sqft', 800)),
+        image_url=data.get('imageUrl', None),
+        status='available'
     )
 
     try:
