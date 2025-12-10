@@ -110,7 +110,6 @@ export default function PropertyVerification() {
 
   if (!property) {
     return (
-      <DashboardLayout>
         <div className="max-w-3xl mx-auto space-y-4">
           <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
             <ArrowLeft className="h-4 w-4" />
@@ -124,7 +123,6 @@ export default function PropertyVerification() {
             </CardContent>
           </Card>
         </div>
-      </DashboardLayout>
     );
   }
 

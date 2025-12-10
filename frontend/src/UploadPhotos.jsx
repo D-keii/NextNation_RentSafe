@@ -20,7 +20,6 @@ export default function UploadPhotos() {
 
   if (!contract || !property) {
     return (
-      <DashboardLayout>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
@@ -28,7 +27,6 @@ export default function UploadPhotos() {
             <Button onClick={() => navigate('/contracts')}>Back to Contracts</Button>
           </CardContent>
         </Card>
-      </DashboardLayout>
     );
   }
 

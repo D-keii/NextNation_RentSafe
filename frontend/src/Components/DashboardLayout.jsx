@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useContext } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Building2, FileText, Heart, Wallet, ClipboardList, LogOut, Menu, User } from 'lucide-react';
 import Logo from './Logo.jsx';
@@ -11,6 +11,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
 } from './ui/dropdown-menu.jsx';
+import { UserContext } from '../Context/UserContext.jsx'
 
 // Simple dashboard shell inspired by the TS version, tailored for current JS setup
 export function DashboardLayout({ children }) {
@@ -18,7 +19,7 @@ export function DashboardLayout({ children }) {
   const navigate = useNavigate();
 
   // Mocked user (replace with real auth when available)
-  const user = { name: 'Tan Wei Ming', role: 'landlord' };
+  const {userProfile} =   useContext(UserContext)
 
   const tenantLinks = [
     { href: '/tenant-dashboard', label: 'Dashboard', icon: Home },
@@ -36,7 +37,7 @@ export function DashboardLayout({ children }) {
     { href: '/escrow', label: 'Escrow', icon: Wallet },
   ];
 
-  const links = user?.role === 'landlord' ? landlordLinks : tenantLinks;
+  const links = userProfile?.role === 'landlord' ? landlordLinks : tenantLinks;
 
   const handleLogout = () => {
     // Placeholder: replace with real logout
@@ -48,7 +49,7 @@ export function DashboardLayout({ children }) {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b bg-card/90 backdrop-blur">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link to="/landlord-dashboard" className="flex items-center gap-2 text-lg font-bold text-foreground">
+          <Link to={userProfile.role ==="landlord" ? "/landlord-dashboard" : "/tenant-dashboard"} className="flex items-center gap-2 text-lg font-bold text-foreground">
             <Logo size="sm" />
           </Link>
 
@@ -83,17 +84,17 @@ export function DashboardLayout({ children }) {
                     <Button variant="ghost" className="gap-2">
                       <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center">
                         <span className="text-sm font-medium text-primary-foreground">
-                          {user?.name?.charAt(0) || 'U'}
+                          {userProfile?.name?.charAt(0) || 'U'}
                         </span>
                       </div>
-                      <span className="hidden sm:inline">{user?.name || 'User'}</span>
+                      <span className="hidden sm:inline">{userProfile?.name || 'User'}</span>
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent open={open} align="end" className="w-56">
                     <DropdownMenuLabel>
                       <div className="flex flex-col">
-                        <span>{user?.name || 'User'}</span>
-                        <span className="text-xs text-muted-foreground capitalize">{user?.role || 'tenant'}</span>
+                        <span>{userProfile?.name || 'User'}</span>
+                        <span className="text-xs text-muted-foreground capitalize">{userProfile?.role || 'tenant'}</span>
                       </div>
                     </DropdownMenuLabel>
                     <DropdownMenuSeparator />

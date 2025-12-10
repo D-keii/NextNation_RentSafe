@@ -2,10 +2,13 @@ import { BrowserRouter,Routes,Route,Outlet } from 'react-router-dom'
 import Login from './Login.jsx'
 import MockMyDigital from './MockMyDigital.jsx'
 import Registration from './Registration.jsx'
+import { UserProvider } from './Context/UserContext.jsx'
+
 
 import TenantDashboard from './TenantDashboard.jsx'
 import SavedListings from './SavedListings.jsx'
 import ApplicationListings from './ApplicationListings.jsx'
+import TenantEscrow from './TenantEscrow.jsx'
 
 import LandlordDashboard from './LandlordDashboard.jsx'
 import Properties from './Properties.jsx'
@@ -21,6 +24,7 @@ import Profile from './Profile.jsx'
 import ListingDetails from './ListingDetails.jsx'
 import { ToastProvider } from './Components/ToastContext.jsx'
 import ScrollToTop from './Components/ScrollToTop.jsx'
+import DashboardLayout from './Components/DashboardLayout.jsx'
 
 function AuthLayout (){
     return <Outlet/>
@@ -28,7 +32,9 @@ function AuthLayout (){
 
 function AppLayout (){
     return(
-        <Outlet/>
+        <DashboardLayout>
+            <Outlet/>
+        </DashboardLayout>
     )
   }
 
@@ -36,15 +42,16 @@ function AppRoutes(){
   return(
     <Routes>
       <Route element={<AuthLayout/>}>
-        <Route path="/" element={<Login/>}></Route>
+        <Route path="/" element={<Login/>}/>
         <Route path="/register" element={<Registration/>}/>
-        <Route path="/mock-mydigital" element={<MockMyDigital/>}/>
+        <Route path="/mock-digitalid" element={<MockMyDigital/>}/>
       </Route>
       <Route element={<AppLayout/>}>
         <Route path="/tenant-dashboard" element={<TenantDashboard/>}/>
         <Route path="/landlord-dashboard" element={<LandlordDashboard/>}/>
         <Route path="/saved" element={<SavedListings/>}/>
-        <Route path="/applications" element={<ApplicationListings/>}></Route>
+        <Route path="/applications" element={<ApplicationListings/>}/>
+        <Route path="/tenant-escrow" element={<TenantEscrow/>}/>
 
         {/* Landlord flows */}
         <Route path="/properties" element={<Properties/>}/>
@@ -72,10 +79,12 @@ function App() {
 
   return (
     <ToastProvider>
-      <BrowserRouter>
-        <ScrollToTop />
-        <AppRoutes/>
-      </BrowserRouter>
+      <UserProvider>
+        <BrowserRouter>
+          <ScrollToTop />
+          <AppRoutes/>
+        </BrowserRouter>
+      </UserProvider>
     </ToastProvider>
   )
 }

@@ -53,3 +53,7 @@ Thumbs.db
 *.tmp
 *.temp
 .cache
+
+backend/database.db
+backend/*.sqlite
+backend/*.db

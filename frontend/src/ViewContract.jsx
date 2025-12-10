@@ -22,7 +22,6 @@ export default function ViewContract() {
 
   if (!contract || !property) {
     return (
-      <DashboardLayout>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FileText className="h-12 w-12 text-muted-foreground mb-4" />
@@ -30,7 +29,6 @@ export default function ViewContract() {
             <Button onClick={() => navigate('/contracts')}>Back to Contracts</Button>
           </CardContent>
         </Card>
-      </DashboardLayout>
     );
   }
 
@@ -55,7 +53,6 @@ export default function ViewContract() {
   };
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
         <Button variant="ghost" onClick={() => navigate('/contracts')} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -249,7 +246,6 @@ export default function ViewContract() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
   );
 }
 

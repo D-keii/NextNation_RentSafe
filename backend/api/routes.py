@@ -30,9 +30,7 @@ def login_mydigitalid():
     #     _external=True
     # )
 
-    redirect_url = url_for(
-        f"http://localhost:5173/mock-digitalid?session={session_id}"
-    )
+    redirect_url = f"http://localhost:5173/mock-digitalid?session={session_id}"
     return jsonify({"redirect_url": redirect_url})
 
 # # Mock Mydigitalid page (frontend did mocking)
@@ -69,9 +67,10 @@ def callback():
         return jsonify({"error": "Invalid token"}), 400
     profile = MOCK_TOKENS[token]
 
-    existing = User.query.filter_by(email=profile["email"]).first()
+    # Query by IC since User model uses IC as unique identifier (not email)
+    existing = User.query.filter_by(ic=profile["ic"]).first()
     if not existing:
-        user = User(email=profile["ic"], name=profile["name"], age=profile["age"], gender=profile["gender"])
+        user = User(ic=profile["ic"], name=profile["name"], age=profile["age"], gender=profile["gender"])
         db.session.add(user)
         db.session.commit()
         user_id = user.id

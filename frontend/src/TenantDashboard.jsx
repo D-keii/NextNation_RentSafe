@@ -3,7 +3,11 @@ import { Link } from "react-router-dom"
 import SquareListingCard from "./Components/SquareListingCard.jsx"
 import LongRectangleListingCard from "./Components/LongRectangleListingCard.jsx"
 import propertyImage from "./img/property-image.jpg"
+import {UserContext} from './Context/UserContext.jsx'
+import { useContext } from "react"
 export default function TenantDashboard(){
+
+    const {userProfile} = useContext(UserContext)
 
     const dashboardSummaryCards = [
         {
@@ -27,7 +31,7 @@ export default function TenantDashboard(){
             icon:Wallet,
             number:1,
             color: 'text-success',
-            href:"/escrows"
+            href:"/tenant-escrow"
         }
     ]
 
@@ -91,10 +95,10 @@ export default function TenantDashboard(){
         <div className="p-10 flex flex-col space-y-7">
             <div className="flex flex-row items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold">Welcome Back, Ahmad!</h1>
+                    <h1 className="text-2xl font-bold">{`Welcome Back, ${userProfile.name}!`}</h1>
                     <p className="text-muted-foreground">Find your perfect rental today.</p>
                 </div>
-                <button className="flex flex-row bg-accent items-center text-white font-semibold rounded-md p-1.5"><Search className="w-5 h-5 mr-3"/> Browse All Listings</button>
+                <Link to="all-listings" className="flex flex-row bg-accent items-center text-white font-semibold rounded-md p-1.5"><Search className="w-5 h-5 mr-3"/> Browse All Listings</Link>
             </div>
             <div className="grid grid-cols-3 gap-4">
                 {
@@ -127,7 +131,10 @@ export default function TenantDashboard(){
                 </div>
             </div>
             <div className="flex flex-col space-y-3">
-                <h2 className="text-2xl font-bold">Recommended For You</h2>
+                <div className="flex flex-row items-center justify-between">
+                    <h2 className="text-2xl font-bold">Recommended For You</h2>
+                    <Link to="/all-listings" className="flex flex-row p-2 hover:bg-muted-foreground/10 rounded-md">View All <ArrowRight className="ml-2"/></Link>
+                </div>
                 <div className="grid grid-cols-3 gap-5">
                     {
                         recommendListings.map((recommendListing , index)=>(

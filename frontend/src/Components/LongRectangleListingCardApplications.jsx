@@ -26,7 +26,7 @@ export default function LongRectangleListingCardApplications({imageUrl , propert
     return(
         <div className="flex flex-row items-center border-1 rounded-xl  justify-between">
             <div className="flex flex-row items-center space-x-5">
-                <img src={imageUrl} alt="Property Image" className="aspect-square max-w-[180px] object-cover rounded-md" />
+                <img src={imageUrl} alt={propertyImage} className="aspect-square max-w-[180px] object-cover rounded-md" />
                 <div className="flex flex-col space-y-4">
                     <div className="flex flex-row space-x-3 items-center">
                         <p className="text-lg font-semibold">{propertyName}</p>

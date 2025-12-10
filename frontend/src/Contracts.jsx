@@ -69,7 +69,6 @@ export default function Contracts() {
   }, [categorizedContracts, statusFilter]);
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -189,7 +188,6 @@ export default function Contracts() {
           </div>
         )}
       </div>
-    </DashboardLayout>
   );
 }
 
