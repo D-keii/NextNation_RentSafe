@@ -72,6 +72,30 @@ def delete_property(id):
     db.session.commit()
     return jsonify({"message": "Property deleted"}), 200
 
+# --- TASK 2: PROPERTY RETRIEVAL ---
+
+# 4. GET ALL Properties
+@app.route('/properties/all', methods=['GET'])
+def get_all_properties():
+    # Fetch all properties from the database
+    properties = Property.query.all()
+    
+    # Convert the list of objects into a list of dictionaries (JSON)
+    result = [p.to_dict() for p in properties]
+    
+    return jsonify(result), 200
+
+# 5. GET SINGLE Property
+@app.route('/properties/<int:id>', methods=['GET'])
+def get_property(id):
+    # Find the property by ID
+    property_item = Property.query.get(id)
+    
+    if not property_item:
+        return jsonify({"message": "Property not found"}), 404
+        
+    return jsonify(property_item.to_dict()), 200
+
 # --- RUN THE SERVER ---
 if __name__ == '__main__':
     with app.app_context():
