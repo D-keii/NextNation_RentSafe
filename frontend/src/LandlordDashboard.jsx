@@ -56,7 +56,6 @@ export default function LandlordDashboard() {
   ];
 
   return (
-    <DashboardLayout>
     <div className="p-5 md:p-8 flex flex-col space-y-8">
       {/* Welcome Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -389,7 +388,6 @@ export default function LandlordDashboard() {
         </div>
       )}
       </div>
-    </DashboardLayout>
   );
 }
 

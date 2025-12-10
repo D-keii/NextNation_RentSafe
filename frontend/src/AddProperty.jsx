@@ -158,7 +158,6 @@ export default function AddProperty() {
   };
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
         <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -440,7 +439,6 @@ export default function AddProperty() {
           </Card>
         </form>
       </div>
-    </DashboardLayout>
   );
 }
 

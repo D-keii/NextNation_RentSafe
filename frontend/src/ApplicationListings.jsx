@@ -1,50 +1,29 @@
 import { Newspaper,Filter } from "lucide-react"
 import LongRectangleListingCardApplications from "./Components/LongRectangleListingCardApplications"
-import propertyImage from "./img/property-image.jpg"
+import axios from './axios.js'
+import { useState,useEffect,useContext } from "react"
+import { UserContext } from "./Context/UserContext.jsx"
 export default function ApplicationListings(){
 
-    const applications = [
-        {
-            imageUrl: propertyImage,
-            propertyName: "Sunway Geo Residence",
-            applyDate: "2025-12-01",
-            status: "approved",
-            price: 1800,
-            location: "Bandar Sunway",
-        },
-        {
-            imageUrl: propertyImage,
-            propertyName: "Eco Sky Residence",
-            applyDate: "2025-12-03",
-            status: "rejected",
-            price: 2400,
-            location: "Cheras",
-        },
-        {
-            imageUrl: propertyImage,
-            propertyName: "PV 15 Condo",
-            applyDate: "2025-12-05",
-            status: "pending",
-            price: 1500,
-            location: "Setapak",
-        },
-        {
-            imageUrl: propertyImage,
-            propertyName: "M Vertica",
-            applyDate: "2025-12-07",
-            status: "reviewing",
-            price: 3200,
-            location: "KL City",
-        },
-        {
-            imageUrl: propertyImage,
-            propertyName: "Pangsapuri Putra Damai",
-            applyDate: "2025-12-08",
-            status: "under-verification",
-            price: 900,
-            location: "Putrajaya",
-        },
-    ];
+    const {userProfile} = useContext(UserContext)
+    const [applications,setApplications] = useState([])
+
+    const fetchApplications = async()=>{
+        try{
+            const result = await axios.get(`/applications/${userProfile.ic}`);
+            setApplications(result.data)
+            console.log(result.data)
+        }
+        catch(err){
+            console.error("Failed to fetch listings", err)
+        }
+    }
+
+    useState(()=>{
+        fetchApplications()
+    },[])
+
+
 
     return(
         <div className="p-5 flex flex-col space-y-5">
@@ -61,13 +40,17 @@ export default function ApplicationListings(){
                     <div className="px-5 py-3">Rejected</div>
                 </div>
             </div>
-            <div className="flex flex-col space-y-5">
-                {
-                    applications.map((application,index)=>(
-                        <LongRectangleListingCardApplications key={index} imageUrl={application.imageUrl} propertyName={application.propertyName} applyDate={application.applyDate} status={application.status} price={application.price} location={application.location}/>
-                    ))
-                }
-            </div>
+            {
+                applications.length !== 0 
+                ?<div className="flex flex-col space-y-5">
+                    {
+                        applications.map((application,index)=>(
+                            <LongRectangleListingCardApplications key={index} imageUrl={application.imageUrl} propertyName={application.propertyName} applyDate={application.applyDate} status={application.status} price={application.price} location={application.location}/>
+                        ))
+                    }
+                </div>
+                :<div className="text-center mt-30 text-xl">No applications found</div>
+            }
         </div>
     )
 }

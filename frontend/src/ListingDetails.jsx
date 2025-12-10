@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Button } from './Components/ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from './Components/ui/card.jsx';
 import Badge from './Components/ui/badge.jsx';
@@ -33,12 +32,10 @@ export default function ListingDetails() {
 
   if (!property) {
     return (
-      <DashboardLayout>
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <h1 className="text-2xl font-bold">Property Not Found</h1>
           <Button onClick={() => navigate('/properties')}>Back to Properties</Button>
         </div>
-      </DashboardLayout>
     );
   }
 
@@ -63,7 +60,6 @@ export default function ListingDetails() {
   };
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 animate-fade-in">
         <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -231,7 +227,6 @@ export default function ListingDetails() {
           </div>
         </div>
       </div>
-    </DashboardLayout>
   );
 }
 

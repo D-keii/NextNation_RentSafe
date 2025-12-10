@@ -1,3 +1,5 @@
+import propertyImage from "../img/property-image.jpg"
+
 export default function LongRectangleListingCard({imageUrl , propertyName , applyDate , status}){
 
     const getStatusClasses = () => {
@@ -24,7 +26,7 @@ export default function LongRectangleListingCard({imageUrl , propertyName , appl
     return(
         <div className="flex flex-row justify-between items-center border-1 p-3 rounded-xl">
             <div className="flex flex-row items-center space-x-5">
-                <img src={imageUrl} alt="Property Image" className="aspect-square max-w-[100px] object-cover rounded-md" />
+                <img src={imageUrl} alt={propertyImage} className="aspect-square max-w-[100px] object-cover rounded-md" />
                 <div>
                     <p className="text-lg font-semibold">{propertyName}</p>
                     <p className="text-sm text-muted-foreground">{`Applied on ${applyDate}`}</p>

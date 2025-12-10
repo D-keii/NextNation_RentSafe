@@ -20,7 +20,6 @@ export default function ApplicationReview() {
 
   if (!application || !property) {
     return (
-      <DashboardLayout>
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FileText className="h-12 w-12 text-muted-foreground mb-4" />
@@ -28,7 +27,6 @@ export default function ApplicationReview() {
             <Button onClick={() => navigate('/applications')}>Back to Applications</Button>
           </CardContent>
         </Card>
-      </DashboardLayout>
     );
   }
 
@@ -45,7 +43,6 @@ export default function ApplicationReview() {
   };
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
         <Button variant="ghost" onClick={() => navigate('/applications/list')} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -201,7 +198,6 @@ export default function ApplicationReview() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
   );
 }
 

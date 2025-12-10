@@ -1,33 +1,80 @@
 import { Home, Building2, ArrowRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useContext , useEffect } from 'react';
+import { UserContext } from './Context/UserContext';
+import { useToast } from './Components/ToastContext.jsx'
+import axios from "./axios.js"
+import { useNavigate } from 'react-router-dom';
 
 export default function Registration(){
     const [role,setRole] = useState("")
+    const {setUserProfile , userProfile} = useContext(UserContext)
+    const {toast} = useToast()
+    const navigate = useNavigate()
+
+    useEffect(()=>{
+        console.log(userProfile)
+    }, [userProfile])
+
+    const handleRedirectDashboard = async()=>{
+        if (role && userProfile.user_id){ 
+            const payload = {
+                role:role,
+                user_id:userProfile.user_id
+            }
+
+            try{
+                await axios.post("/users/setup" , payload)
+                setUserProfile({
+                    ...userProfile,
+                    role:role
+                })
+                if(role === "tenant"){
+                    navigate("/tenant-dashboard")
+                }
+                else{
+                    navigate("/landlord-dashboard")
+                }
+            }
+            catch(err){
+                console.error("Failed to setup account")
+            }         
+        }
+
+        else{
+            toast({
+                title: "Incomplete info",
+                description: "Please complete your profile before continuing.",
+                variant: "destructive",
+            });  
+        }
+    }
+
+
 
     return(
         <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
             <div className="w-full max-w-2xl bg-white shadow-xl rounded-2xl p-8 space-y-6">
                 <h1 className="text-center text-2xl font-bold">Complete Your Profile</h1>
-                <p className="text-muted-foreground text-center">Welcome, Ahmad Bin Abdullah! Let's set up your preferences.</p>
+                <p className="text-muted-foreground text-center">{`Welcome, ${userProfile.name}! Let's set up your preferences.`}</p>
                 <div className="flex flex-col space-y-8">
                     <div className="rounded-lg bg-muted p-4 space-y-4">
                         <p className="font-semibold text-muted-foreground">Verified Information</p>
                         <div className=" grid grid-cols-2 gap-4 ">
                             <div>
                                 <p className="font-semibold text-muted-foreground">Full Name</p>
-                                <p className="font-semibold">Ahmad Bin Abdullah</p>
+                                <p className="font-semibold">{userProfile.name}</p>
                             </div>
                             <div>
                                 <p className="font-semibold text-muted-foreground">IC Number</p>
-                                <p className="font-semibold">950101-01-1234</p>
+                                <p className="font-semibold">{userProfile.ic}</p>
                             </div>
                             <div>
                                 <p className="font-semibold text-muted-foreground">Age</p>
-                                <p className="font-semibold">29 years old</p>
+                                <p className="font-semibold">{`${userProfile.age} years old`}</p>
                             </div>
                             <div>
                                 <p className="font-semibold text-muted-foreground">Gender</p>
-                                <p className="font-semibold">Male</p>
+                                <p className="font-semibold">{`${userProfile.gender}`}</p>
                         </div>
                         </div>
                     </div>
@@ -50,7 +97,7 @@ export default function Registration(){
                             </div>
                         </div>
                     </div>
-                    <button className=' cursor-pointer flex flex-row items-center justify-center gradient-primary text-white font-semibold text-md rounded-md p-3 hover:scale-105 active:scale-95'>Complete Setup <ArrowRight className="h-5 w-5 ml-2"/></button>
+                    <button onClick={()=>handleRedirectDashboard()} type="button" className=' cursor-pointer flex flex-row items-center justify-center gradient-primary text-white font-semibold text-md rounded-md p-3 hover:scale-105 active:scale-95'>Complete Setup <ArrowRight className="h-5 w-5 ml-2"/></button>
                 </div>
             </div>
         </div>

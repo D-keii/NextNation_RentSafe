@@ -1,6 +1,5 @@
 import Logo from "./Components/Logo"
 import { Shield,Lock,FileCheck,Wallet } from "lucide-react";
-import { useNavigate } from "react-router-dom";
 import axios from "./axios.js"
 export default function Login(){
 
@@ -44,7 +43,6 @@ export default function Login(){
                         "Complete your profile and start renting"
                     ]
     
-    const navigate = useNavigate()
 
     return(
         <div className="flex flex-col w-[90%] pt-[50px] items-center justify-center mx-auto">
