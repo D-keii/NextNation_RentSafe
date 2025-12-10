@@ -4,6 +4,7 @@ import MockMyDigital from './MockMyDigital.jsx'
 import Registration from './Registration.jsx'
 import Navbar from './Components/Navbar.jsx'
 
+
 import TenantDashboard from './TenantDashboard.jsx'
 import SavedListings from './SavedListings.jsx'
 import ApplicationListings from './ApplicationListings.jsx'
@@ -28,7 +29,7 @@ function AppRoutes(){
       <Route element={<AuthLayout/>}>
         <Route path="/" element={<Login/>}></Route>
         <Route path="/register" element={<Registration/>}/>
-        <Route path="/mock-mydigital" element={<MockMyDigital/>}/>
+        <Route path="/mock-digitalid" element={<MockMyDigital/>}/>
       </Route>
       <Route element={<AppLayout/>}>
         <Route path="/tenant-dashboard" element={<TenantDashboard/>}/>

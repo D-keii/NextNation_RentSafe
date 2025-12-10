@@ -30,9 +30,7 @@ def login_mydigitalid():
     #     _external=True
     # )
 
-    redirect_url = url_for(
-        f"http://localhost:5173/mock-digitalid?session={session_id}"
-    )
+    redirect_url = f"http://localhost:5173/mock-digitalid?session={session_id}"
     return jsonify({"redirect_url": redirect_url})
 
 # # Mock Mydigitalid page (frontend did mocking)

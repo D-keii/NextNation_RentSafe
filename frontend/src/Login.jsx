@@ -1,6 +1,7 @@
 import Logo from "./Components/Logo"
 import { Shield,Lock,FileCheck,Wallet } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import axios from "./axios.js"
 export default function Login(){
 
     const features = [
@@ -25,6 +26,17 @@ export default function Login(){
             desc: 'FPX and DuitNow supported',
         },
     ];
+
+    const redirectToMyDigital = async()=>{
+        try{
+            const response = await axios.get("/auth/login-mydigitalid");
+            const data = response.data;
+            window.location.href = data.redirect_url;
+        }
+        catch(err){
+            console.log("Failed to fetch url" , err)
+        }
+    }
 
     const loginSteps = [
                         "Click Login with MyDigital ID",
@@ -60,7 +72,7 @@ export default function Login(){
                 <div className="flex-1 bg-white px-8 md:px-5 py-10 rounded-md shadow-sm flex flex-col items-center justify-center gap-5 w-full">
                     <p className="text-3xl whitespace-nowrap font-bold leading-none tracking-tight">Welcome to RentSafe</p>
                     <p className="text-md text-muted-foreground">Sign in securely with your MyDigital ID</p>
-                    <button onClick={()=>navigate("/mock-mydigital") }className="w-full font-bold whitespace-nowrap gradient-primary flex items-center justify-center gap-3 py-3 px-6 rounded-md text-white text-sm cursor-pointer transform transition-transform duration-200 hover:scale-105 active:scale-95">
+                    <button onClick={()=>redirectToMyDigital() }className="w-full font-bold whitespace-nowrap gradient-primary flex items-center justify-center gap-3 py-3 px-6 rounded-md text-white text-sm cursor-pointer transform transition-transform duration-200 hover:scale-105 active:scale-95">
                         <Shield className="h-5 w-5" />
                         Login with MyDigital ID
                     </button>
