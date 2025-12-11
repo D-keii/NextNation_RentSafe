@@ -21,7 +21,6 @@ import ViewContract from './ViewContract.jsx'
 import UploadPhotos from './UploadPhotos.jsx'
 import Escrow from './Escrow.jsx'
 import Profile from './Profile.jsx'
-import ListingDetails from './ListingDetails.jsx'
 import { ToastProvider } from './Components/ToastContext.jsx'
 import ScrollToTop from './Components/ScrollToTop.jsx'
 import DashboardLayout from './Components/DashboardLayout.jsx'
@@ -68,7 +67,6 @@ function AppRoutes(){
 
         <Route path="/escrow" element={<Escrow/>}/>
         <Route path="/profile" element={<Profile/>}/>
-        <Route path="/listing/:id" element={<ListingDetails/>}/>
       </Route>
     </Routes>
   )
