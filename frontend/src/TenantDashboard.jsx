@@ -2,7 +2,6 @@ import { Search,Newspaper, Wallet, Heart,ArrowRight } from "lucide-react"
 import { Link } from "react-router-dom"
 import SquareListingCard from "./Components/SquareListingCard.jsx"
 import LongRectangleListingCard from "./Components/LongRectangleListingCard.jsx"
-import propertyImage from "./img/property-image.jpg"
 import {UserContext} from './Context/UserContext.jsx'
 import { useContext } from "react"
 export default function TenantDashboard(){
@@ -34,61 +33,6 @@ export default function TenantDashboard(){
             href:"/tenant-escrow"
         }
     ]
-
-
-    const recommendListings = [
-    {
-        imageUrl:propertyImage,
-        monthlyRental: 1800,
-        name: "Sunway Geo Residence",
-        location: "Bandar Sunway",
-        noOfBed: 2,
-        noOfToilet: 2,
-        noOfSqft: 850,
-        isBookMarked: false,
-    },
-    {
-        imageUrl:propertyImage,
-        monthlyRental: 2400,
-        name: "Eco Sky Residence",
-        location: "Cheras",
-        noOfBed: 3,
-        noOfToilet: 2,
-        noOfSqft: 1100,
-        isBookMarked: true,
-    },
-    {
-        imageUrl:propertyImage,
-        monthlyRental: 1500,
-        name: "PV 15 Condo",
-        location: "Setapak",
-        noOfBed: 2,
-        noOfToilet: 1,
-        noOfSqft: 750,
-        isBookMarked: false,
-    },
-    ];
-
-    const rentalApplications = [
-    {
-        imageUrl: propertyImage,
-        propertyName: "Sunway Geo Residence",
-        applyDate: "2025-12-01",
-        status: "approved",
-    },
-    {
-        imageUrl: propertyImage,
-        propertyName: "Eco Sky Residence",
-        applyDate: "2025-12-03",
-        status: "rejected",
-    },
-    {
-        imageUrl: propertyImage,
-        propertyName: "PV 15 Condo",
-        applyDate: "2025-12-05",
-        status: "pending",
-    },
-    ];
 
 
     return(
@@ -147,7 +91,7 @@ export default function TenantDashboard(){
                 <h2 className="text-2xl font-bold">Pending Applications</h2>
                 {
                     rentalApplications.map((rentalApplication , index)=>(
-                        <LongRectangleListingCard key={index} imageUrl={rentalApplication.imageUrl} propertyName={rentalApplication.propertyName} applyDate={rentalApplication.applyDate} status={rentalApplication.status}/>
+                        <LongRectangleListingCard key={index} imageUrl={rentalApplication.photos[0]} propertyName={rentalApplication.title} applyDate={rentalApplication.createdAt} status={rentalApplication.status}/>
                     ))
                 }
             </div>
