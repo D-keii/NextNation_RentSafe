@@ -289,6 +289,54 @@ def get_landlord_dashboard(ic):
         "securedEscrows": [e.to_dict() for e in secured_escrows]
     }), 200
 
+# TASK 8: TENANT HISTORY FOR LANDLORD
+
+@app.route('/landlord/<string:ic>/tenant-history', methods=['GET'])
+def get_landlord_tenant_history(ic):
+    # 1. Fetch all contracts associated with this Landlord
+    # We order by end_date descending so the most recent history appears top
+    contracts = Contract.query.filter_by(landlord_ic=ic).order_by(Contract.end_date.desc()).all()
+
+    history_data = []
+
+    for contract in contracts:
+        # 2. Logic to find Tenant Name
+        # Since the Contract model only has tenant_ic, we try to find the name 
+        # from the Application table. 
+        # (Assumption: A contract usually starts from an application).
+        tenant_app = Application.query.filter_by(tenant_ic=contract.tenant_ic).first()
+        tenant_name = tenant_app.tenant_name if tenant_app else "Unknown Name"
+
+        # 3. Get Escrow Data safely
+        escrow_info = contract.escrow.to_dict() if contract.escrow else {
+            "status": "No Escrow", 
+            "amount": 0, 
+            "paymentMethod": "N/A"
+        }
+
+        # 4. Build the data object
+        history_data.append({
+            "contractId": contract.id,
+            "tenant": {
+                "name": tenant_name,
+                "ic": contract.tenant_ic
+            },
+            "property": {
+                "id": contract.property.id,
+                "title": contract.property.title,
+                "location": contract.property.location
+            },
+            "contractDetails": {
+                "status": contract.status,
+                "startDate": contract.start_date.isoformat(),
+                "endDate": contract.end_date.isoformat(),
+                "monthlyRent": contract.monthly_rent
+            },
+            "escrow": escrow_info
+        })
+
+    return jsonify(history_data), 200
+
 # --- RUN THE SERVER ---
 if __name__ == '__main__':
     with app.app_context():
