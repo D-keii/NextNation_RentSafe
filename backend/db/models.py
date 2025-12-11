@@ -54,32 +54,23 @@ class Application(db.Model):
             'property': self.property.to_dict() if self.property else None
         }
 
-# 3. CONTRACT MODEL (Updated with Signatures)
+# 3. CONTRACT MODEL
 class Contract(db.Model):
     __tablename__ = 'contracts'
-    
     id = db.Column(db.Integer, primary_key=True)
     property_id = db.Column(db.Integer, db.ForeignKey('properties.id'), nullable=False)
     tenant_ic = db.Column(db.String(20), nullable=False)
     landlord_ic = db.Column(db.String(20), nullable=False)
-    
-    # Financials
     monthly_rent = db.Column(db.Float, nullable=False)
     deposit_amount = db.Column(db.Float, nullable=False)
-    start_date = db.Column(db.DateTime, default=datetime.utcnow) # Mock start date
-    end_date = db.Column(db.DateTime, default=datetime.utcnow)   # Mock end date
-    
-    # Status Tracking
+    start_date = db.Column(db.DateTime, default=datetime.utcnow)
+    end_date = db.Column(db.DateTime, default=datetime.utcnow)
     status = db.Column(db.String(50), default='pending_photos') 
     property_photos = db.Column(db.Text, nullable=True) 
-    
-    # --- SIGNATURE FIELDS (NEW) ---
     tenant_signed = db.Column(db.Boolean, default=False)
     landlord_signed = db.Column(db.Boolean, default=False)
-    landlord_signature_data = db.Column(db.Text, nullable=True) # To store the "digital signature" text
-    photos_approved = db.Column(db.Boolean, default=False)      # Track if tenant approved photos
-
-    # Relationships
+    landlord_signature_data = db.Column(db.Text, nullable=True)
+    photos_approved = db.Column(db.Boolean, default=False)
     property = db.relationship('Property', backref=db.backref('contracts', lazy=True))
 
     def to_dict(self):
@@ -94,11 +85,33 @@ class Contract(db.Model):
             'startDate': self.start_date.isoformat(),
             'endDate': self.end_date.isoformat(),
             'propertyPhotos': self.property_photos.split(',') if self.property_photos else [],
-            
-            # Signature Status
             'tenantSigned': self.tenant_signed,
             'landlordSigned': self.landlord_signed,
             'photosApproved': self.photos_approved,
-            
             'property': self.property.to_dict() if self.property else None
+        }
+
+# 4. ESCROW MODEL (NEW!)
+class Escrow(db.Model):
+    __tablename__ = 'escrow'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey('contracts.id'), nullable=False)
+    amount = db.Column(db.Float, nullable=False)
+    
+    # Status options: pending, secured, release_requested, released, disputed
+    status = db.Column(db.String(50), default='pending') 
+    payment_method = db.Column(db.String(50), nullable=True) # FPX, DuitNow
+    paid_at = db.Column(db.DateTime, nullable=True)
+
+    contract = db.relationship('Contract', backref=db.backref('escrow', uselist=False))
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'contractId': str(self.contract_id),
+            'amount': self.amount,
+            'status': self.status,
+            'paymentMethod': self.payment_method,
+            'paidAt': self.paid_at.isoformat() if self.paid_at else None
         }

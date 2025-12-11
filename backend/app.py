@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
-from db.models import db, Property, Application, Contract
+from db.models import db, Property, Application, Contract, Escrow
 from datetime import datetime, timedelta
 app = Flask(__name__)
 
@@ -211,6 +211,44 @@ def upload_contract_photos(contract_id):
     db.session.commit()
     return jsonify({"message": "Photos uploaded", "contract": contract.to_dict()}), 200
 
+# TASK 6: ESCROW SYSTEM
+
+# 13. GET ESCROW STATUS (By Contract ID)
+@app.route('/escrow/<int:contract_id>', methods=['GET'])
+def get_escrow_status(contract_id):
+    # Try to find existing escrow
+    escrow = Escrow.query.filter_by(contract_id=contract_id).first()
+    
+    # Logic: If contract exists but no escrow record yet, return a "Pending" placeholder
+    # OR we can auto-create one. Let's return a basic status if not found.
+    if not escrow:
+        return jsonify({"status": "pending", "amount": 0}), 200
+        
+    return jsonify(escrow.to_dict()), 200
+
+# 14. APPROVE RELEASE (Landlord releases money to themselves or tenant)
+@app.route('/escrow/<int:escrow_id>/approve-release', methods=['POST'])
+def approve_escrow_release(escrow_id):
+    escrow = Escrow.query.get(escrow_id)
+    if not escrow:
+        return jsonify({"message": "Escrow record not found"}), 404
+        
+    escrow.status = 'released'
+    # In a real app, this would trigger a Bank API transfer
+    
+    db.session.commit()
+    return jsonify({"message": "Funds released successfully", "escrow": escrow.to_dict()}), 200
+
+# 15. REJECT RELEASE / DISPUTE
+@app.route('/escrow/<int:escrow_id>/reject-release', methods=['POST'])
+def reject_escrow_release(escrow_id):
+    escrow = Escrow.query.get(escrow_id)
+    if not escrow:
+        return jsonify({"message": "Escrow record not found"}), 404
+        
+    escrow.status = 'disputed'
+    db.session.commit()
+    return jsonify({"message": "Release rejected. Dispute process started.", "escrow": escrow.to_dict()}), 200
 
 # --- RUN THE SERVER ---
 if __name__ == '__main__':
