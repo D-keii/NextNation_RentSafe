@@ -24,93 +24,92 @@ const apiRequest = async (endpoint, options = {}) => {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
-      headers,
-    });
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    ...options,
+    headers,
+  });
 
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status} ${response.statusText}`);
-    }
-
-    return await response.json();
-  } catch (error) {
-    console.error('API request failed:', error);
-    throw error;
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(errorText || `API error: ${response.status} ${response.statusText}`);
   }
+
+  if (response.status === 204) return null;
+  return response.json();
+};
+
+// Landlord composite dashboard
+export const landlordAPI = {
+  getDashboard: async (landlordIc) => apiRequest(`/users/${landlordIc}/landlord-dashboard`),
+  getTenantHistory: async (landlordIc) => apiRequest(`/landlord/${landlordIc}/tenant-history`),
+};
+
+export const tenantAPI = {
+  getRentalHistory: async (tenantIc) => apiRequest(`/users/${tenantIc}/rental-history`),
 };
 
 // Properties API
 export const propertiesAPI = {
-  // Get all properties for a landlord
-  getLandlordProperties: async (landlordIc) => {
-    return apiRequest(`/properties?landlordIc=${landlordIc}`);
-  },
-
-  // Get a single property
-  getProperty: async (propertyId) => {
-    return apiRequest(`/properties/${propertyId}`);
-  },
-
-  // Delete a property
-  deleteProperty: async (propertyId) => {
-    return apiRequest(`/properties/${propertyId}`, { method: 'DELETE' });
-  },
+  getAll: async () => apiRequest('/properties/all'),
+  getProperty: async (propertyId) => apiRequest(`/properties/${propertyId}`),
+  createProperty: async (payload) =>
+    apiRequest('/properties/create', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  updateProperty: async (propertyId, payload) =>
+    apiRequest(`/properties/${propertyId}/update`, {
+      method: 'PUT',
+      body: JSON.stringify(payload),
+    }),
+  deleteProperty: async (propertyId) =>
+    apiRequest(`/properties/${propertyId}/delete`, {
+      method: 'DELETE',
+    }),
 };
 
 // Applications API
 export const applicationsAPI = {
-  // Get all applications for a landlord
-  getLandlordApplications: async (landlordIc) => {
-    return apiRequest(`/applications?landlordIc=${landlordIc}`);
-  },
-
-  // Get pending applications
-  getPendingApplications: async (landlordIc) => {
-    return apiRequest(`/applications?landlordIc=${landlordIc}&status=pending`);
-  },
-
-  // Get a single application
-  getApplication: async (applicationId) => {
-    return apiRequest(`/applications/${applicationId}`);
-  },
+  getPropertyApplications: async (propertyId) => apiRequest(`/properties/${propertyId}/applications`),
+  getApplication: async (applicationId) => apiRequest(`/applications/${applicationId}`),
+  approve: async (applicationId) =>
+    apiRequest(`/applications/${applicationId}/approve`, {
+      method: 'POST',
+    }),
+  reject: async (applicationId) =>
+    apiRequest(`/applications/${applicationId}/reject`, {
+      method: 'POST',
+    }),
 };
 
 // Contracts API
 export const contractsAPI = {
-  // Get all contracts for a landlord
-  getLandlordContracts: async (landlordIc) => {
-    return apiRequest(`/contracts?landlordIc=${landlordIc}`);
-  },
-
-  // Get active contracts
-  getActiveContracts: async (landlordIc) => {
-    return apiRequest(`/contracts?landlordIc=${landlordIc}&status=active`);
-  },
-
-  // Get pending contracts
-  getPendingContracts: async (landlordIc) => {
-    return apiRequest(`/contracts?landlordIc=${landlordIc}&status=pending`);
-  },
-
-  // Get a single contract
-  getContract: async (contractId) => {
-    return apiRequest(`/contracts/${contractId}`);
-  },
+  getContract: async (contractId) => apiRequest(`/contracts/${contractId}`),
+  uploadPhotos: async (contractId) =>
+    apiRequest(`/contracts/${contractId}/upload-photos`, {
+      method: 'POST',
+    }),
+  signAsLandlord: async (contractId) =>
+    apiRequest(`/contracts/${contractId}/landlord/sign`, {
+      method: 'POST',
+    }),
 };
 
 // Escrow API
 export const escrowAPI = {
-  // Get all escrows for a landlord
-  getLandlordEscrows: async (landlordIc) => {
-    return apiRequest(`/escrows?landlordIc=${landlordIc}`);
-  },
-
-  // Get secured escrows
-  getSecuredEscrows: async (landlordIc) => {
-    return apiRequest(`/escrows?landlordIc=${landlordIc}&status=secured`);
-  },
+  getByContract: async (contractId) => apiRequest(`/escrow/${contractId}`),
+  approveRelease: async (escrowId) =>
+    apiRequest(`/escrow/${escrowId}/approve-release`, {
+      method: 'POST',
+    }),
+  rejectRelease: async (escrowId) =>
+    apiRequest(`/escrow/${escrowId}/reject-release`, {
+      method: 'POST',
+    }),
+  requestRelease: async (escrowId) =>
+    apiRequest(`/escrow/${escrowId}/request-release`, {
+      method: 'POST',
+    }),
 };
 
 // Export helper functions

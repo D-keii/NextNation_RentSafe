@@ -1,6 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useContext } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import DashboardLayout from './Components/DashboardLayout.jsx';
 import { useToast } from './Components/ToastContext.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
@@ -8,8 +7,9 @@ import { Input } from './Components/ui/input.jsx';
 import { Textarea } from './Components/ui/textarea.jsx';
 import { Checkbox } from './Components/ui/checkbox.jsx';
 import { Label } from './Components/ui/label.jsx';
-import { mockProperties } from './data/mockData.js';
 import { ArrowLeft, Building2, Upload, Plus, Trash2, Image as ImageIcon, ShieldAlert } from 'lucide-react';
+import api from './axios.js';
+import { UserContext } from './Context/UserContext.jsx';
 
 const amenitiesList = [
   'WiFi',
@@ -31,9 +31,10 @@ export default function AddProperty() {
   const { id } = useParams();
   const fileInputRef = useRef(null);
   const { toast } = useToast();
-  const landlordIc = '800515-01-5678';
+  const { userProfile } = useContext(UserContext);
+  const landlordIc = userProfile?.ic || '';
   const isEditMode = Boolean(id);
-  const existingProperty = mockProperties.find((p) => p.id === id);
+  const [existingProperty, setExistingProperty] = useState(null);
   const isEditable = !isEditMode || !existingProperty || existingProperty.status === 'verified';
 
   const [formData, setFormData] = useState({
@@ -73,24 +74,38 @@ export default function AddProperty() {
   ];
 
   useEffect(() => {
-    if (existingProperty) {
-      setFormData({
-        title: existingProperty.title,
-        description: existingProperty.description,
-        address: existingProperty.address,
-        postcode: existingProperty.postcode || '',
-        city: existingProperty.city || '',
-        state: existingProperty.state || '',
-        housingType: existingProperty.housingType || '',
-        price: existingProperty.price.toString(),
-        bedrooms: existingProperty.bedrooms.toString(),
-        bathrooms: existingProperty.bathrooms.toString(),
-        size: existingProperty.size.toString(),
-        amenities: existingProperty.amenities,
-      });
-      setPhotos(existingProperty.photos);
-    }
-  }, [existingProperty]);
+    let isMounted = true;
+    const load = async () => {
+      if (!isEditMode) return;
+      try {
+        const { data } = await api.get(`/properties/${id}`);
+        if (!isMounted) return;
+        setExistingProperty(data);
+        setFormData({
+          title: data.title || '',
+          description: data.description || '',
+          address: data.address || data.location || '',
+          postcode: data.postcode || '',
+          city: data.city || '',
+          state: data.state || '',
+          housingType: data.housingType || data.property_type || '',
+          price: (data.price ?? '').toString(),
+          bedrooms: (data.bedrooms ?? '').toString(),
+          bathrooms: (data.bathrooms ?? '').toString(),
+          size: (data.size ?? '').toString(),
+          amenities: data.amenities || [],
+        });
+        setPhotos(data.photos || []);
+      } catch (err) {
+        console.error(err);
+        toast({ title: 'Failed to load property', variant: 'error' });
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [id, isEditMode, toast]);
 
   const toggleAmenity = (amenity) => {
     setFormData((prev) => ({
@@ -112,49 +127,45 @@ export default function AddProperty() {
       return;
     }
     setIsSubmitting(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setIsSubmitting(false);
 
-    // Build property data to pass forward (mock only)
-    const propertyId = existingProperty?.id ?? `prop-${mockProperties.length + 1}`;
-    const propertyData = {
-      id: propertyId,
-      landlordIc: existingProperty?.landlordIc ?? landlordIc,
+    const payload = {
       title: formData.title,
       description: formData.description,
       address: formData.address,
-      postcode: formData.postcode,
       city: formData.city,
       state: formData.state,
-      housingType: formData.housingType || undefined,
       price: parseFloat(formData.price || '0') || 0,
       bedrooms: parseInt(formData.bedrooms || '0', 10) || 0,
       bathrooms: parseInt(formData.bathrooms || '0', 10) || 0,
-      size: parseFloat(formData.size || '0') || 0,
-      amenities: formData.amenities,
-      photos,
-      available: true,
-      createdAt: existingProperty?.createdAt ?? new Date().toISOString().split('T')[0],
-      status: existingProperty?.status ?? 'unverified',
-      verification: existingProperty?.verification ?? { status: 'pending' },
+      size_sqft: parseFloat(formData.size || '0') || 0,
+      amenities: formData.amenities.join(','),
+      landlord_ic: landlordIc,
+      imageUrl: photos[0] || null,
+      location: formData.address || `${formData.city}, ${formData.state}`,
+      property_type: formData.housingType,
     };
 
-    // If editing an already verified property, just save and return to list (no verification step)
-    if (isEditMode && existingProperty?.status === 'verified') {
-      toast({ title: 'Property updated', description: 'Listing saved.', variant: 'success' });
-      navigate('/properties');
-      return;
+    try {
+      if (isEditMode) {
+        await api.put(`/properties/${id}/update`, payload);
+        toast({ title: 'Property updated', description: 'Listing saved.', variant: 'success' });
+        navigate('/properties');
+      } else {
+        const { data } = await api.post('/properties/create', payload);
+        const createdId = data?.property?.id || data?.property?.propertyId || data?.property?.property_id;
+        toast({ title: 'Property created', description: 'Continue to ownership verification.', variant: 'success' });
+        if (createdId) {
+          navigate(`/properties/${createdId}/verification`, { state: { propertyId: createdId, propertyData: data?.property } });
+        } else {
+          navigate('/properties');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Save failed', description: 'Please try again.', variant: 'error' });
+    } finally {
+      setIsSubmitting(false);
     }
-
-    // New or unverified property -> go to verification step
-    toast({
-      title: 'Property saved',
-      description: 'Proceed to ownership verification.',
-      variant: 'success',
-    });
-    navigate(`/properties/${propertyId}/verification`, {
-      state: { fromAddProperty: true, propertyId, propertyData },
-    });
   };
 
   return (

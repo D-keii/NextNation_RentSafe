@@ -2,7 +2,7 @@ from flask import request, url_for, jsonify, redirect, render_template_string
 from . import api_bp
 from db.db import db
 from db.db_tables import User, TenantPreference, Listing, SavedListing, RentalApplication, Contract, Escrow, Property, Application
-from datetime import datetime
+from datetime import datetime, timedelta
 # Genrate unique session id
 import uuid
 import json
@@ -355,24 +355,42 @@ def add_property():
     if not data or 'title' not in data or 'price' not in data:
         return jsonify({"message": "Error: Title and Price are required"}), 400
 
-    # Handle Address Logic (Combine fields if needed)
-    full_address = data.get('location')
-    if not full_address and 'address' in data:
-        full_address = f"{data['address']}, {data.get('city', '')}, {data.get('state', '')}"
+    # Normalize address and optional fields
+    full_address = data.get('location') or data.get('address')
+    if not full_address:
+        full_address = f"{data.get('address', '')}, {data.get('city', '')}, {data.get('state', '')}".strip(", ")
+
+    def to_int(value, default=0):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def to_float(value, default=0.0):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
+    amenities_value = data.get('amenities', '')
+    if isinstance(amenities_value, list):
+        amenities_value = ",".join(amenities_value)
+
+    image_url = data.get('imageUrl') or data.get('image_url')
 
     new_property = Property(
         title=data['title'],
         description=data.get('description', ''),
         location=full_address,
-        price=data['price'],
-        landlord_ic=data.get('landlord_ic', 'UNKNOWN'),
-
-        # New fields
-        bedrooms=int(data.get('bedrooms', 1)),
-        bathrooms=int(data.get('bathrooms', 1)),
-        size_sqft=int(data.get('size_sqft', 800)),
-        image_url=data.get('imageUrl', None),
-        status='available'
+        price=to_float(data.get('price')),
+        landlord_ic=data.get('landlord_ic'),
+        bedrooms=to_int(data.get('bedrooms', 1), 1),
+        bathrooms=to_int(data.get('bathrooms', 1), 1),
+        size_sqft=to_int(data.get('size_sqft', data.get('size', 800)), 800),
+        amenities=amenities_value,
+        property_type=data.get('housingType') or data.get('property_type'),
+        image_url=image_url,
+        status=data.get('status', 'available')
     )
 
     try:
@@ -390,9 +408,56 @@ def update_property(id):
         return jsonify({"message": "Property not found"}), 404
 
     data = request.get_json()
+    if not data:
+        return jsonify({"message": "No data provided"}), 400
+
+    def to_int(value, default=None):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def to_float(value, default=None):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return default
+
     if 'title' in data: property_item.title = data['title']
-    if 'price' in data: property_item.price = data['price']
-    if 'location' in data: property_item.location = data['location']
+    if 'description' in data: property_item.description = data['description']
+
+    # Address/location
+    full_address = data.get('location') or data.get('address')
+    if full_address or ('city' in data or 'state' in data):
+        if not full_address:
+            full_address = f"{data.get('address', '')}, {data.get('city', '')}, {data.get('state', '')}".strip(", ")
+        property_item.location = full_address
+
+    price_val = to_float(data.get('price'))
+    if price_val is not None: property_item.price = price_val
+
+    bedrooms_val = to_int(data.get('bedrooms'))
+    if bedrooms_val is not None: property_item.bedrooms = bedrooms_val
+
+    bathrooms_val = to_int(data.get('bathrooms'))
+    if bathrooms_val is not None: property_item.bathrooms = bathrooms_val
+
+    size_val = to_int(data.get('size_sqft') or data.get('size'))
+    if size_val is not None: property_item.size_sqft = size_val
+
+    amenities_value = data.get('amenities')
+    if amenities_value is not None:
+        if isinstance(amenities_value, list):
+            amenities_value = ",".join(amenities_value)
+        property_item.amenities = amenities_value
+
+    if 'housingType' in data: property_item.property_type = data['housingType']
+    if 'property_type' in data: property_item.property_type = data['property_type']
+
+    if 'imageUrl' in data: property_item.image_url = data.get('imageUrl')
+    if 'image_url' in data: property_item.image_url = data.get('image_url')
+
+    if 'status' in data: property_item.status = data['status']
 
     db.session.commit()
     return jsonify({"message": "Property updated", "property": property_item.to_dict()}), 200

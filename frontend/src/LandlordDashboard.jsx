@@ -1,31 +1,66 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Building2, Users, FileText, Wallet, Plus, ArrowRight, MapPin, Edit, Eye, Trash2, DollarSign, Image } from 'lucide-react';
 import StatusBadge from './Components/StatusBadge';
 import propertyImage from './img/property-image.jpg';
-import { mockProperties, mockApplications, mockContracts, mockEscrows } from './data/mockData.js';
-import DashboardLayout from './Components/DashboardLayout.jsx';
+import api from './axios.js';
+import { UserContext } from './Context/UserContext.jsx';
 
 export default function LandlordDashboard() {
   const navigate = useNavigate();
+  const { userProfile } = useContext(UserContext);
   const [deleteId, setDeleteId] = useState(null);
-  const landlordIc = '800515-01-5678';
+  const landlordIc = userProfile?.ic || '';
 
-  // Data filtered for landlord
-  const [myProperties, setMyProperties] = useState(mockProperties.filter((p) => p.landlordIc === landlordIc));
-  const [pendingApplications] = useState(mockApplications.filter((a) => a.landlordIc === landlordIc && a.status === 'pending'));
-  const [activeContracts] = useState(mockContracts.filter((c) => c.landlordIc === landlordIc && c.status === 'active'));
-  const [pendingContracts] = useState(
-    mockContracts.filter(
-      (c) =>
-        c.landlordIc === landlordIc &&
-        (c.status === 'pending_signatures' || c.status === 'pending_photos' || c.status === 'pending_tenant_approval')
-    )
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [dashboardData, setDashboardData] = useState({
+    myProperties: [],
+    pendingApplications: [],
+    activeContracts: [],
+    pendingContracts: [],
+    securedEscrows: [],
+  });
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchDashboard = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await api.get(`/users/${landlordIc}/landlord-dashboard`);
+        if (!isMounted) return;
+        setDashboardData({
+          myProperties: data?.myProperties || [],
+          pendingApplications: data?.pendingApplications || [],
+          activeContracts: data?.activeContracts || [],
+          pendingContracts: data?.pendingContracts || [],
+          securedEscrows: data?.securedEscrows || [],
+        });
+      } catch (err) {
+        if (!isMounted) return;
+        setError('Failed to load dashboard data');
+        console.error(err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    fetchDashboard();
+    return () => {
+      isMounted = false;
+    };
+  }, [landlordIc]);
+
+  const { myProperties, pendingApplications, activeContracts, pendingContracts, securedEscrows } = dashboardData;
+
+  const monthlyIncome = useMemo(
+    () => activeContracts.reduce((sum, c) => sum + (Number(c.monthlyRent) || 0), 0),
+    [activeContracts]
   );
-  const [securedEscrows] = useState(mockEscrows.filter((e) => e.landlordIc === landlordIc && e.status === 'secured'));
-
-  const monthlyIncome = activeContracts.reduce((sum, c) => sum + (c.monthlyRent || 0), 0);
-  const totalEscrowAmount = securedEscrows.reduce((sum, e) => sum + (e.amount || 0), 0);
+  const totalEscrowAmount = useMemo(
+    () => securedEscrows.reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
+    [securedEscrows]
+  );
 
   const verificationStatus = (property) => {
     if (property.status === 'verified') return 'verified';
@@ -38,9 +73,9 @@ export default function LandlordDashboard() {
     if (!deleteId) return;
 
     try {
-      // In mock mode just remove from local state
-      const updated = myProperties.filter((p) => p.id !== deleteId);
-      setMyProperties(updated);
+      await api.delete(`/properties/${deleteId}/delete`);
+      const updated = myProperties.filter((p) => String(p.id) !== String(deleteId));
+      setDashboardData((prev) => ({ ...prev, myProperties: updated }));
       setDeleteId(null);
     } catch (err) {
       console.error('Error deleting property:', err);
@@ -54,6 +89,22 @@ export default function LandlordDashboard() {
     { label: 'Active Contracts', value: activeContracts.length, icon: FileText, href: '/contracts', color: 'text-info' },
     { label: 'Escrow', value: `RM ${totalEscrowAmount.toLocaleString()}`, icon: Wallet, href: '/escrow', color: 'text-success' },
   ];
+
+  if (loading) {
+    return (
+      <div className="p-5 md:p-8">
+        <p className="text-muted-foreground">Loading dashboard...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-5 md:p-8">
+        <p className="text-destructive">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-5 md:p-8 flex flex-col space-y-8">
@@ -129,9 +180,9 @@ export default function LandlordDashboard() {
         ) : (
           <div className="flex flex-col space-y-4">
             {pendingApplications.map((app) => {
-              const property = myProperties.find((p) => p.id === app.propertyId);
+                  const property = app.property || myProperties.find((p) => String(p.id) === String(app.propertyId));
               return (
-                <div key={app.id} className="flex flex-row justify-between items-center border-2 p-4 rounded-xl">
+                    <div key={app.id} className="flex flex-row justify-between items-center border-2 p-4 rounded-xl">
                   <div className="flex flex-row items-center space-x-4">
                     <div className="h-16 w-16 rounded-lg bg-muted overflow-hidden flex-shrink-0">
                       <img
@@ -214,7 +265,7 @@ export default function LandlordDashboard() {
                           Tenant IC: {contract.tenantIc || 'N/A'}
                         </p>
                         <p className="text-sm font-medium text-accent">
-                          RM {contract.monthlyRent?.toLocaleString() || '0'}/mo — Deposit RM {contract.depositAmount?.toLocaleString() || '0'}
+                          RM {Number(contract.monthlyRent || 0).toLocaleString()}/mo — Deposit RM {Number(contract.depositAmount || 0).toLocaleString()}
                         </p>
                       </div>
                     </div>

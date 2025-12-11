@@ -1,25 +1,62 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Card, CardContent } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
 import StatusBadge from './Components/StatusBadge.jsx';
-import { mockApplications, mockProperties } from './data/mockData.js';
 import { ClipboardList, ArrowRight, Building2, Calendar, User } from 'lucide-react';
+import api from './axios.js';
+import { UserContext } from './Context/UserContext.jsx';
 
 export default function Applications() {
   const navigate = useNavigate();
+  const { userProfile } = useContext(UserContext);
   const [statusFilter, setStatusFilter] = useState('all');
-  const user = { role: 'landlord', ic: '800515-01-5678' };
+  const user = userProfile || {};
   const isLandlord = user?.role === 'landlord';
+  const [applications, setApplications] = useState([]);
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const applications = useMemo(
-    () =>
-      isLandlord
-        ? mockApplications.filter((app) => app.landlordIc === '800515-01-5678')
-        : mockApplications.filter((app) => app.tenantIc === user?.ic),
-    [isLandlord, user?.ic]
-  );
+  useEffect(() => {
+    let isMounted = true;
+    const loadApplications = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data: dashboard } = await api.get(`/users/${user.ic}/landlord-dashboard`);
+        if (!isMounted) return;
+        const myProps = dashboard?.myProperties || [];
+        setProperties(myProps);
+
+        const appLists = await Promise.all(
+          myProps.map((p) => api.get(`/properties/${p.id}/applications`).then((res) => res.data))
+        );
+        const flattened = appLists.flat().map((app) => ({
+          ...app,
+          property: app.property || myProps.find((p) => String(p.id) === String(app.propertyId)),
+        }));
+        setApplications(flattened);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Failed to load applications');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    if (isLandlord && user.ic) {
+      loadApplications();
+    } else {
+      setLoading(false);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [isLandlord, user.ic]);
 
   const statusCounts = {
     all: applications.length,
@@ -31,6 +68,22 @@ export default function Applications() {
   const filteredApplications = applications.filter((app) =>
     statusFilter === 'all' ? true : app.status === statusFilter
   );
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <p className="text-muted-foreground">Loading applications...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <p className="text-destructive">{error}</p>
+      </div>
+    );
+  }
 
   return (
       <div className="space-y-6 animate-fade-in">
@@ -77,7 +130,7 @@ export default function Applications() {
         ) : (
           <div className="grid gap-4">
             {filteredApplications.map((app) => {
-              const property = mockProperties.find((p) => p.id === app.propertyId);
+              const property = app.property || properties.find((p) => String(p.id) === String(app.propertyId));
               return (
                 <Card key={app.id} className="overflow-hidden">
                   <CardContent className="p-0">

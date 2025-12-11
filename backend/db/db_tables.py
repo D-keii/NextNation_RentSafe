@@ -77,14 +77,31 @@ class Property(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
     def to_dict(self):
+        """Return a frontend-friendly shape compatible with landlord pages."""
+        photos = [self.image_url] if self.image_url else ["https://placehold.co/600x400"]
+        city = self.location.split(',')[1].strip() if ',' in self.location and len(self.location.split(',')) > 1 else self.location
+        state = self.location.split(',')[-1].strip() if ',' in self.location else "Malaysia"
         return {
-            'id': self.id,
+            'id': str(self.id),
             'title': self.title,
+            'description': self.description or "",
+            'address': self.location,
             'location': self.location,
+            'city': city,
+            'state': state,
             'price': self.price,
-            'photos': [self.image_url] if self.image_url else ["https://placehold.co/600x400"],
-            'city': self.location.split(',')[1] if ',' in self.location else self.location,
-            'state': self.location.split(',')[-1] if ',' in self.location else "Malaysia"
+            'bedrooms': self.bedrooms,
+            'bathrooms': self.bathrooms,
+            'size': self.size_sqft,
+            'housingType': self.property_type,
+            'amenities': self.amenities.split(',') if self.amenities else [],
+            'photos': photos,
+            'available': self.status == 'available',
+            'status': self.status or 'unverified',
+            # Default verification shape so frontend badges render (pending by default)
+            'verification': {'status': 'pending'},
+            'landlordIc': self.landlord_ic,
+            'createdAt': self.created_at.isoformat() if self.created_at else None
         }
 
 
@@ -135,7 +152,8 @@ class Contract(db.Model):
     tenant_signature_at = db.Column(db.DateTime, nullable=True)
     tenant_document_hash = db.Column(db.String(255), nullable=True)
 
-def to_dict(self):
+    def to_dict(self):
+        """Shape contract data for frontend consumption."""
         return {
             'id': str(self.id),
             'propertyId': str(self.property_id),

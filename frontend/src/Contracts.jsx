@@ -1,10 +1,9 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
 import StatusBadge from './Components/StatusBadge.jsx';
-import { mockProperties, mockContracts, mockEscrows } from './data/mockData.js';
+import api from './axios.js';
 import {
   FileText,
   Check,
@@ -17,23 +16,67 @@ import {
   Image,
   Upload as UploadIcon,
 } from 'lucide-react';
+import { UserContext } from './Context/UserContext.jsx';
 
 const filters = ['all', 'pending', 'active', 'completed'];
 
 export default function Contracts() {
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('all');
-  const user = { role: 'landlord', ic: '800515-01-5678' };
+  const { userProfile } = useContext(UserContext);
+  const user = userProfile || {};
   const isLandlord = user?.role === 'landlord';
+  const [contracts, setContracts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const allContracts = useMemo(() => {
-    return isLandlord
-      ? mockContracts.filter((c) => c.landlordIc === '800515-01-5678')
-      : mockContracts.filter((c) => c.tenantIc === user?.ic);
-  }, [isLandlord, user?.ic]);
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data: dashboard } = await api.get(`/users/${user.ic}/landlord-dashboard`);
+        if (!isMounted) return;
+        const merged = [...(dashboard?.activeContracts || []), ...(dashboard?.pendingContracts || [])];
+        const deduped = Object.values(
+          merged.reduce((acc, c) => {
+            acc[c.id] = c;
+            return acc;
+          }, {})
+        );
+        const withEscrow = await Promise.all(
+          deduped.map(async (contract) => {
+            try {
+              const { data: escrow } = await api.get(`/escrow/${contract.id}`);
+              return { contract, escrow };
+            } catch {
+              return { contract, escrow: null };
+            }
+          })
+        );
+        if (isMounted) setContracts(withEscrow);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Failed to load contracts');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    if (isLandlord && user.ic) {
+      load();
+    } else {
+      setLoading(false);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [user.ic, isLandlord]);
 
   const categorizeContract = (contract) => {
-    const escrow = mockEscrows.find((e) => e.contractId === contract.id);
+    const escrow = contracts.find((e) => e.contract.id === contract.id)?.escrow;
     const today = new Date();
     const endDate = new Date(contract.endDate);
     if (contract.status === 'completed' || (endDate < today && (escrow?.status === 'released' || escrow?.status === 'release_requested'))) {
@@ -47,12 +90,12 @@ export default function Contracts() {
 
   const categorizedContracts = useMemo(
     () =>
-      allContracts.map((contract) => ({
+      contracts.map(({ contract, escrow }) => ({
         contract,
         category: categorizeContract(contract),
-        escrow: mockEscrows.find((e) => e.contractId === contract.id),
+        escrow,
       })),
-    [allContracts]
+    [contracts]
   );
 
   const statusCounts = useMemo(() => {
@@ -67,6 +110,22 @@ export default function Contracts() {
     if (statusFilter === 'all') return categorizedContracts;
     return categorizedContracts.filter((c) => c.category === statusFilter);
   }, [categorizedContracts, statusFilter]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <p className="text-muted-foreground">Loading contracts...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <p className="text-destructive">{error}</p>
+      </div>
+    );
+  }
 
   return (
       <div className="space-y-6 animate-fade-in">
@@ -114,7 +173,7 @@ export default function Contracts() {
         ) : (
           <div className="grid gap-4">
             {filteredContracts.map(({ contract, escrow }) => {
-              const property = mockProperties.find((p) => p.id === contract.propertyId);
+              const property = contract.property;
               return (
                 <Card key={contract.id}>
                   <CardContent className="flex flex-col gap-4 p-4 md:flex-row md:items-center md:justify-between">

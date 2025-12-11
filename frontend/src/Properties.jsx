@@ -1,44 +1,100 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import DashboardLayout from './Components/DashboardLayout.jsx';
 import StatusBadge from './Components/StatusBadge.jsx';
 import { Card, CardContent } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
-import { mockProperties } from './data/mockData.js';
 import { Building2, Plus, Edit, Trash2, MapPin, Eye, Upload } from 'lucide-react';
 import { useToast } from './Components/ToastContext.jsx';
+import api from './axios.js';
+import { UserContext } from './Context/UserContext.jsx';
 
 const filters = ['all', 'verified', 'unverified'];
 
 export default function Properties() {
   const navigate = useNavigate();
+  const { userProfile } = useContext(UserContext);
   const [deleteId, setDeleteId] = useState(null);
   const [filter, setFilter] = useState('all');
   const { toast } = useToast();
+  const [properties, setProperties] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const allMyProperties = mockProperties.filter((p) => p.landlordIc === '800515-01-5678');
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await api.get('/properties/all');
+        if (!isMounted) return;
+        const mine = (data || []).filter((p) => !userProfile?.ic || p.landlordIc === userProfile.ic);
+        setProperties(mine);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Failed to load properties');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [userProfile?.ic]);
 
-  const myProperties = useMemo(() => {
-    if (filter === 'all') return allMyProperties;
-    if (filter === 'verified') return allMyProperties.filter((p) => p.status === 'verified');
-    return allMyProperties.filter((p) => p.status === 'unverified');
-  }, [allMyProperties, filter]);
-
-  const handleDelete = () => {
-    toast({
-      title: 'Property deleted',
-      description: 'The property has been removed from your listings.',
-      variant: 'success',
-    });
-    setDeleteId(null);
-  };
-
+  // Verification state is tracked on property.verification; availability (e.g., "available")
+  // is separate and should not drive the badge.
   const verificationStatus = (property) => {
-    if (property.status === 'verified') return 'verified';
-    if (property.verification?.status === 'rejected') return 'rejected';
-    if (property.verification?.status === 'pending') return 'verification_pending';
+    const v = property.verification?.status;
+    if (v === 'verified') return 'verified';
+    if (v === 'rejected') return 'rejected';
+    if (v === 'pending') return 'verification_pending';
     return 'unverified';
   };
+
+  const myProperties = useMemo(() => {
+    if (filter === 'all') return properties;
+    const isVerified = filter === 'verified';
+    return properties.filter((p) => {
+      const v = verificationStatus(p);
+      return isVerified ? v === 'verified' : v !== 'verified';
+    });
+  }, [properties, filter]);
+
+  const handleDelete = async () => {
+    try {
+      await api.delete(`/properties/${deleteId}/delete`);
+      setProperties((prev) => prev.filter((p) => String(p.id) !== String(deleteId)));
+      toast({
+        title: 'Property deleted',
+        description: 'The property has been removed from your listings.',
+        variant: 'success',
+      });
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Delete failed', description: 'Please try again.', variant: 'error' });
+    } finally {
+      setDeleteId(null);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <p className="text-muted-foreground">Loading properties...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <p className="text-destructive">{error}</p>
+      </div>
+    );
+  }
 
   return (
       <div className="space-y-6 animate-fade-in">
@@ -61,8 +117,9 @@ export default function Properties() {
             const label = f.charAt(0).toUpperCase() + f.slice(1);
             const count =
               f === 'all'
-                ? allMyProperties.length
-                : allMyProperties.filter((p) => (f === 'verified' ? p.status === 'verified' : p.status === 'unverified')).length;
+                ? properties.length
+                : properties.filter((p) => (f === 'verified' ? verificationStatus(p) === 'verified' : verificationStatus(p) !== 'verified'))
+                    .length;
             const isActive = filter === f;
             return (
               <button
@@ -136,7 +193,7 @@ export default function Properties() {
                           <Eye className="h-4 w-4 mr-2" />
                           View
                         </Button>
-                        {property.status === 'verified' ? (
+                        {verificationStatus(property) === 'verified' ? (
                           <>
                             <Button variant="outline" size="sm" onClick={() => navigate(`/properties/${property.id}/edit`)}>
                               <Edit className="h-4 w-4 mr-2" />
