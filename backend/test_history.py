@@ -6,7 +6,7 @@ BASE_URL = "http://127.0.0.1:5000"
 
 # IMPORTANT: Replace this with an IC that actually exists in your 'contracts' table
 # If you used the previous test script, check what landlord_ic was assigned to Property #1.
-TEST_LANDLORD_IC = "901010-10-5555" 
+TEST_LANDLORD_IC = "800515-01-5678" 
 
 def run_history_test():
     print(f"🚀 STARTING TENANT HISTORY TEST for Landlord: {TEST_LANDLORD_IC}...")
