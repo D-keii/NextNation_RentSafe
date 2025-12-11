@@ -27,34 +27,66 @@ class Property(db.Model):
             'title': self.title,
             'location': self.location,
             'price': self.price,
-            'description': self.description,
-            'photos': [self.image_url] if self.image_url else ["https://placehold.co/600x400"], # Frontend expects an array
-            'city': self.location.split(',')[1] if ',' in self.location else self.location, # Simple mock city extraction
+            'photos': [self.image_url] if self.image_url else ["https://placehold.co/600x400"],
+            'city': self.location.split(',')[1] if ',' in self.location else self.location,
             'state': self.location.split(',')[-1] if ',' in self.location else "Malaysia"
         }
 
-# 2. APPLICATION MODEL 
+# 2. APPLICATION MODEL
 class Application(db.Model):
     __tablename__ = 'applications'
-    
     id = db.Column(db.Integer, primary_key=True)
     property_id = db.Column(db.Integer, db.ForeignKey('properties.id'), nullable=False)
     tenant_ic = db.Column(db.String(20), nullable=False)
     tenant_name = db.Column(db.String(100), nullable=False)
-    status = db.Column(db.String(20), default='pending') # pending, approved, rejected
+    status = db.Column(db.String(20), default='pending')
     applied_at = db.Column(db.DateTime, default=datetime.utcnow)
-
-    # Link to Property
     property = db.relationship('Property', backref=db.backref('applications', lazy=True))
 
     def to_dict(self):
         return {
-            'id': str(self.id), # Frontend often expects string IDs in URLs
+            'id': str(self.id),
             'propertyId': str(self.property_id),
             'tenantName': self.tenant_name,
             'tenantIc': self.tenant_ic,
             'status': self.status,
             'appliedAt': self.applied_at.isoformat(),
-            # NESTED PROPERTY DATA
+            'property': self.property.to_dict() if self.property else None
+        }
+
+# 3. CONTRACT MODEL 
+class Contract(db.Model):
+    __tablename__ = 'contracts'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    property_id = db.Column(db.Integer, db.ForeignKey('properties.id'), nullable=False)
+    tenant_ic = db.Column(db.String(20), nullable=False)
+    landlord_ic = db.Column(db.String(20), nullable=False)
+    
+    # Financials
+    monthly_rent = db.Column(db.Float, nullable=False)
+    deposit_amount = db.Column(db.Float, nullable=False)
+    
+    # Status Tracking
+    # pending_photos -> pending_tenant_approval -> active
+    status = db.Column(db.String(50), default='pending_photos') 
+    
+    # Store photos as a long string
+    property_photos = db.Column(db.Text, nullable=True) 
+    
+    # Relationships
+    property = db.relationship('Property', backref=db.backref('contracts', lazy=True))
+
+    def to_dict(self):
+        return {
+            'id': str(self.id),
+            'propertyId': str(self.property_id),
+            'tenantIc': self.tenant_ic,
+            'landlordIc': self.landlord_ic,
+            'status': self.status,
+            'monthlyRent': self.monthly_rent,
+            'depositAmount': self.deposit_amount,
+            # Convert string back to list for frontend
+            'propertyPhotos': self.property_photos.split(',') if self.property_photos else [],
             'property': self.property.to_dict() if self.property else None
         }

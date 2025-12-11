@@ -1,9 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
-# Correct Import: We need db, Property, AND Application
-from db.models import db, Property, Application 
-
+from db.models import db, Property, Application, Contract
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
@@ -143,6 +141,40 @@ def reject_application(app_id):
     application.status = 'rejected'
     db.session.commit()
     return jsonify({"message": "Rejected", "application": application.to_dict()}), 200
+
+# TASK 4: CONTRACTS & PHOTOS 
+
+# 10. GET SINGLE Contract (For Upload Page)
+@app.route('/contracts/<int:contract_id>', methods=['GET'])
+def get_contract(contract_id):
+    contract = Contract.query.get(contract_id)
+    if not contract:
+        return jsonify({"message": "Contract not found"}), 404
+    return jsonify(contract.to_dict()), 200
+
+# 11. UPLOAD PHOTOS (The main task)
+# Usage: POST /contracts/1/upload-photos
+@app.route('/contracts/<int:contract_id>/upload-photos', methods=['POST'])
+def upload_contract_photos(contract_id):
+    contract = Contract.query.get(contract_id)
+    if not contract:
+        return jsonify({"message": "Contract not found"}), 404
+
+    # 1. Update the photos list in DB
+    mock_photos = [
+        "https://placehold.co/600x400?text=Living+Room",
+        "https://placehold.co/600x400?text=Kitchen",
+        "https://placehold.co/600x400?text=Bedroom",
+        "https://placehold.co/600x400?text=Bathroom",
+        "https://placehold.co/600x400?text=Balcony"
+    ]
+    contract.property_photos = ",".join(mock_photos)
+    
+    # 2. Update Status
+    contract.status = 'pending_tenant_approval'
+    
+    db.session.commit()
+    return jsonify({"message": "Photos uploaded successfully", "contract": contract.to_dict()}), 200
 
 # --- RUN THE SERVER ---
 if __name__ == '__main__':
