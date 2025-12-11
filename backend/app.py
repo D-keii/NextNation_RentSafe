@@ -250,6 +250,45 @@ def reject_escrow_release(escrow_id):
     db.session.commit()
     return jsonify({"message": "Release rejected. Dispute process started.", "escrow": escrow.to_dict()}), 200
 
+# --- TASK 7: LANDLORD DASHBOARD ---
+
+@app.route('/users/<string:ic>/landlord-dashboard', methods=['GET'])
+def get_landlord_dashboard(ic):
+    # 1. My Properties
+    properties = Property.query.filter_by(landlord_ic=ic).all()
+    
+    # 2. Pending Applications
+    # (Join with Property to find apps for this landlord)
+    pending_apps = db.session.query(Application).join(Property).filter(
+        Property.landlord_ic == ic,
+        Application.status == 'pending'
+    ).all()
+    
+    # 3. Active Contracts
+    active_contracts = Contract.query.filter_by(landlord_ic=ic, status='active').all()
+    
+    # 4. Pending Contracts (Signatures, Photos, Tenant Approval)
+    pending_statuses = ['pending_signatures', 'pending_photos', 'pending_tenant_approval']
+    pending_contracts = Contract.query.filter(
+        Contract.landlord_ic == ic, 
+        Contract.status.in_(pending_statuses)
+    ).all()
+    
+    # 5. Secured Escrows
+    # (Join with Contract to find escrows for this landlord)
+    secured_escrows = db.session.query(Escrow).join(Contract).filter(
+        Contract.landlord_ic == ic,
+        Escrow.status == 'secured'
+    ).all()
+    
+    return jsonify({
+        "myProperties": [p.to_dict() for p in properties],
+        "pendingApplications": [a.to_dict() for a in pending_apps],
+        "activeContracts": [c.to_dict() for c in active_contracts],
+        "pendingContracts": [c.to_dict() for c in pending_contracts],
+        "securedEscrows": [e.to_dict() for e in secured_escrows]
+    }), 200
+
 # --- RUN THE SERVER ---
 if __name__ == '__main__':
     with app.app_context():
