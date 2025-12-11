@@ -1,12 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
 import { Badge } from './Components/ui/badge.jsx';
 import StatusBadge from './Components/StatusBadge.jsx';
 import { FileText, Shield, ArrowLeft, Check, X, Building2, Calendar, DollarSign, PenTool, Image } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useContext } from 'react';
 import { useToast } from './Components/ToastContext.jsx';
+import { UserContext } from './Context/UserContext.jsx';
 import api from './axios.js';
 
 export default function ViewContract() {
@@ -43,7 +43,9 @@ export default function ViewContract() {
       isMounted = false;
     };
   }, [id]);
-  const user = { role: 'landlord', ic: '800515-01-5678' };
+  
+  const { userProfile } = useContext(UserContext);
+  const user = userProfile || {};
   const isLandlord = user?.role === 'landlord';
 
   if (loading) {
