@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
 from db.models import db, Property, Application, Contract
+from datetime import datetime, timedelta
 app = Flask(__name__)
 
 # --- CONFIGURATION ---
@@ -120,16 +121,34 @@ def get_application(app_id):
         return jsonify({"message": "Application not found"}), 404
     return jsonify(application.to_dict()), 200
 
-# 8. APPROVE Application
+# 8. APPROVE Application & AUTO-GENERATE CONTRACT
 @app.route('/applications/<int:app_id>/approve', methods=['POST'])
 def approve_application(app_id):
     application = Application.query.get(app_id)
     if not application:
-        return jsonify({"message": "Not found"}), 404
+        return jsonify({"message": "Application not found"}), 404
         
     application.status = 'approved'
+    
+    # Check if contract exists
+    existing_contract = Contract.query.filter_by(property_id=application.property.id, tenant_ic=application.tenant_ic).first()
+    
+    if not existing_contract:
+        # Create a 1-year contract automatically
+        new_contract = Contract(
+            property_id=application.property.id,
+            tenant_ic=application.tenant_ic,
+            landlord_ic=application.property.landlord_ic,
+            monthly_rent=application.property.price,
+            deposit_amount=application.property.price * 2,
+            start_date=datetime.utcnow(),
+            end_date=datetime.utcnow() + timedelta(days=365),
+            status='pending_photos'
+        )
+        db.session.add(new_contract)
+    
     db.session.commit()
-    return jsonify({"message": "Approved", "application": application.to_dict()}), 200
+    return jsonify({"message": "Application approved & Contract generated!", "application": application.to_dict()}), 200
 
 # 9. REJECT Application
 @app.route('/applications/<int:app_id>/reject', methods=['POST'])
@@ -142,9 +161,9 @@ def reject_application(app_id):
     db.session.commit()
     return jsonify({"message": "Rejected", "application": application.to_dict()}), 200
 
-# TASK 4: CONTRACTS & PHOTOS 
+# --- TASK 4 & 5: CONTRACTS & PHOTOS ---
 
-# 10. GET SINGLE Contract (For Upload Page)
+# 10. GET SINGLE CONTRACT
 @app.route('/contracts/<int:contract_id>', methods=['GET'])
 def get_contract(contract_id):
     contract = Contract.query.get(contract_id)
@@ -152,29 +171,46 @@ def get_contract(contract_id):
         return jsonify({"message": "Contract not found"}), 404
     return jsonify(contract.to_dict()), 200
 
-# 11. UPLOAD PHOTOS (The main task)
-# Usage: POST /contracts/1/upload-photos
+# 11. LANDLORD SIGN CONTRACT
+@app.route('/contracts/<int:contract_id>/landlord/sign', methods=['POST'])
+def sign_contract_landlord(contract_id):
+    contract = Contract.query.get(contract_id)
+    if not contract:
+        return jsonify({"message": "Contract not found"}), 404
+
+    # Simulate Digital Signature
+    signature = f"Signed by {contract.landlord_ic} at {datetime.utcnow()}"
+    
+    contract.landlord_signed = True
+    contract.landlord_signature_data = signature
+    
+    # If both signed, make active
+    if contract.tenant_signed:
+        contract.status = 'active'
+    else:
+        contract.status = 'pending_signatures' 
+        
+    db.session.commit()
+    return jsonify({"message": "Contract signed successfully", "contract": contract.to_dict()}), 200
+
+# 12. UPLOAD PHOTOS
 @app.route('/contracts/<int:contract_id>/upload-photos', methods=['POST'])
 def upload_contract_photos(contract_id):
     contract = Contract.query.get(contract_id)
     if not contract:
         return jsonify({"message": "Contract not found"}), 404
 
-    # 1. Update the photos list in DB
     mock_photos = [
         "https://placehold.co/600x400?text=Living+Room",
         "https://placehold.co/600x400?text=Kitchen",
-        "https://placehold.co/600x400?text=Bedroom",
-        "https://placehold.co/600x400?text=Bathroom",
-        "https://placehold.co/600x400?text=Balcony"
+        "https://placehold.co/600x400?text=Bedroom"
     ]
     contract.property_photos = ",".join(mock_photos)
-    
-    # 2. Update Status
     contract.status = 'pending_tenant_approval'
     
     db.session.commit()
-    return jsonify({"message": "Photos uploaded successfully", "contract": contract.to_dict()}), 200
+    return jsonify({"message": "Photos uploaded", "contract": contract.to_dict()}), 200
+
 
 # --- RUN THE SERVER ---
 if __name__ == '__main__':

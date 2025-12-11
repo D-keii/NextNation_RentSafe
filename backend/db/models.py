@@ -54,7 +54,7 @@ class Application(db.Model):
             'property': self.property.to_dict() if self.property else None
         }
 
-# 3. CONTRACT MODEL 
+# 3. CONTRACT MODEL (Updated with Signatures)
 class Contract(db.Model):
     __tablename__ = 'contracts'
     
@@ -66,14 +66,19 @@ class Contract(db.Model):
     # Financials
     monthly_rent = db.Column(db.Float, nullable=False)
     deposit_amount = db.Column(db.Float, nullable=False)
+    start_date = db.Column(db.DateTime, default=datetime.utcnow) # Mock start date
+    end_date = db.Column(db.DateTime, default=datetime.utcnow)   # Mock end date
     
     # Status Tracking
-    # pending_photos -> pending_tenant_approval -> active
     status = db.Column(db.String(50), default='pending_photos') 
-    
-    # Store photos as a long string
     property_photos = db.Column(db.Text, nullable=True) 
     
+    # --- SIGNATURE FIELDS (NEW) ---
+    tenant_signed = db.Column(db.Boolean, default=False)
+    landlord_signed = db.Column(db.Boolean, default=False)
+    landlord_signature_data = db.Column(db.Text, nullable=True) # To store the "digital signature" text
+    photos_approved = db.Column(db.Boolean, default=False)      # Track if tenant approved photos
+
     # Relationships
     property = db.relationship('Property', backref=db.backref('contracts', lazy=True))
 
@@ -86,7 +91,14 @@ class Contract(db.Model):
             'status': self.status,
             'monthlyRent': self.monthly_rent,
             'depositAmount': self.deposit_amount,
-            # Convert string back to list for frontend
+            'startDate': self.start_date.isoformat(),
+            'endDate': self.end_date.isoformat(),
             'propertyPhotos': self.property_photos.split(',') if self.property_photos else [],
+            
+            # Signature Status
+            'tenantSigned': self.tenant_signed,
+            'landlordSigned': self.landlord_signed,
+            'photosApproved': self.photos_approved,
+            
             'property': self.property.to_dict() if self.property else None
         }
