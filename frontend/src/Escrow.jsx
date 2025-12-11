@@ -1,12 +1,13 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState, useContext } from 'react';
 import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
 import StatusBadge from './Components/StatusBadge.jsx';
-import { mockProperties, mockContracts, mockEscrows } from './data/mockData.js';
 import { Wallet, Shield, CreditCard, Smartphone, ArrowRight, Check, Calendar, Building2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './Components/ui/dialog.jsx';
 import { useToast } from './Components/ToastContext.jsx';
+import api from './axios.js';
+import { UserContext } from './Context/UserContext.jsx';
 
 export default function Escrow() {
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
@@ -15,58 +16,134 @@ export default function Escrow() {
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
 
-  const user = { role: 'landlord', ic: '800515-01-5678' };
+  const { userProfile } = useContext(UserContext);
+  const user = userProfile || {};
   const isLandlord = user?.role === 'landlord';
   const { toast } = useToast();
+  const [escrowsData, setEscrowsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const allEscrows = useMemo(
-    () =>
-      isLandlord
-        ? mockEscrows.filter((e) => e.landlordIc === user?.ic || e.landlordIc === '800515-01-5678')
-        : mockEscrows.filter((e) => e.tenantIc === user?.ic),
-    [isLandlord, user?.ic]
-  );
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data: dashboard } = await api.get(`/users/${user.ic}/landlord-dashboard`);
+        if (!isMounted) return;
+        const contracts = [...(dashboard?.activeContracts || []), ...(dashboard?.pendingContracts || [])];
+        const escrows = await Promise.all(
+          contracts.map(async (contract) => {
+            try {
+              const { data: escrow } = await api.get(`/escrow/${contract.id}`);
+              return { escrow, contract };
+            } catch {
+              return null;
+            }
+          })
+        );
+        const filtered = escrows.filter(Boolean).map(({ escrow, contract }) => ({
+          ...escrow,
+          contract,
+          property: contract.property,
+        }));
+        if (isMounted) setEscrowsData(filtered);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Failed to load escrows');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    if (isLandlord && user.ic) {
+      load();
+    } else {
+      setLoading(false);
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [user.ic, isLandlord]);
 
   const escrows = useMemo(
-    () => allEscrows.filter((e) => (statusFilter === 'all' ? true : e.status === statusFilter)),
-    [allEscrows, statusFilter]
+    () => escrowsData.filter((e) => (statusFilter === 'all' ? true : e.status === statusFilter)),
+    [escrowsData, statusFilter]
   );
 
   const statusCounts = {
-    all: allEscrows.length,
-    pending: allEscrows.filter((e) => e.status === 'pending').length,
-    secured: allEscrows.filter((e) => e.status === 'secured').length,
-    release_requested: allEscrows.filter((e) => e.status === 'release_requested').length,
-    released: allEscrows.filter((e) => e.status === 'released').length,
-    disputed: allEscrows.filter((e) => e.status === 'disputed').length,
+    all: escrowsData.length,
+    pending: escrowsData.filter((e) => e.status === 'pending').length,
+    secured: escrowsData.filter((e) => e.status === 'secured').length,
+    release_requested: escrowsData.filter((e) => e.status === 'release_requested').length,
+    released: escrowsData.filter((e) => e.status === 'released').length,
+    disputed: escrowsData.filter((e) => e.status === 'disputed').length,
+  };
+
+  const handleReleaseRequest = async (action, escrowId) => {
+    setIsLoading(true);
+    try {
+      if (action === 'approve') {
+        await api.post(`/escrow/${escrowId}/approve-release`);
+      } else if (action === 'reject') {
+        await api.post(`/escrow/${escrowId}/reject-release`);
+      } else {
+        await api.post(`/escrow/${escrowId}/request-release`);
+      }
+      toast({
+        title:
+          action === 'approve' ? 'Deposit released' : action === 'reject' ? 'Request rejected' : 'Release requested',
+        variant: action === 'approve' ? 'success' : action === 'reject' ? 'warning' : 'info',
+      });
+      // refresh list
+      const { data: dashboard } = await api.get(`/users/${user.ic}/landlord-dashboard`);
+      const contracts = [...(dashboard?.activeContracts || []), ...(dashboard?.pendingContracts || [])];
+      const refreshed = await Promise.all(
+        contracts.map(async (contract) => {
+          try {
+            const { data: escrow } = await api.get(`/escrow/${contract.id}`);
+            return { ...escrow, contract, property: contract.property };
+          } catch {
+            return null;
+          }
+        })
+      );
+      setEscrowsData(refreshed.filter(Boolean));
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Action failed', description: 'Please try again.', variant: 'error' });
+    } finally {
+      setIsLoading(false);
+      setShowReleaseDialog(false);
+    }
   };
 
   const handlePayment = async () => {
-    if (!paymentMethod) return;
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsLoading(false);
-    toast({ title: 'Payment successful', description: 'Deposit is now secured in escrow.', variant: 'success' });
+    toast({
+      title: 'Payment flow not available',
+      description: 'Deposit payment is handled outside this mock UI.',
+      variant: 'info',
+    });
     setShowPaymentDialog(false);
     setPaymentMethod(null);
   };
 
-  const handleReleaseRequest = async (action) => {
-    setIsLoading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsLoading(false);
-    toast({
-      title: action === 'approve' ? 'Deposit released' : action === 'reject' ? 'Request rejected' : 'Release requested',
-      description:
-        action === 'approve'
-          ? 'The funds have been released to the tenant.'
-          : action === 'reject'
-          ? 'A dispute workflow has been initiated.'
-          : 'The landlord will review your request.',
-      variant: action === 'approve' ? 'success' : action === 'reject' ? 'warning' : 'info',
-    });
-    setShowReleaseDialog(false);
-  };
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <p className="text-muted-foreground">Loading escrow records...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6 animate-fade-in">
+        <p className="text-destructive">{error}</p>
+      </div>
+    );
+  }
 
   return (
       <div className="space-y-6 animate-fade-in">
@@ -132,8 +209,8 @@ export default function Escrow() {
         ) : (
           <div className="grid gap-4">
             {escrows.map((escrow) => {
-              const contract = mockContracts.find((c) => c.id === escrow.contractId);
-              const property = mockProperties.find((p) => p.id === contract?.propertyId);
+              const contract = escrow.contract;
+              const property = escrow.property || contract?.property;
               return (
                 <Card key={escrow.id}>
                   <CardContent className="p-6">

@@ -1,45 +1,89 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
 import StatusBadge from './Components/StatusBadge.jsx';
-import { mockProperties, mockApplications, mockTenantInfo, mockRentalHistories } from './data/mockData.js';
 import { ArrowLeft, User, Building2, Calendar, DollarSign, Check, X, FileText, MapPin } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from './Components/ToastContext.jsx';
+import api from './axios.js';
 
 export default function ApplicationReview() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [isProcessing, setIsProcessing] = useState(false);
   const { toast } = useToast();
-  const application = mockApplications.find((app) => app.id === id);
-  const property = mockProperties.find((p) => p.id === application?.propertyId);
-  const tenantInfo = application ? mockTenantInfo[application.tenantIc] : null;
-  const rentalHistory = application ? mockRentalHistories[application.tenantIc] || [] : [];
+  const [application, setApplication] = useState(null);
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  if (!application || !property) {
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await api.get(`/applications/${id}`);
+        if (!isMounted) return;
+        setApplication(data);
+        setProperty(data.property || null);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Application not found');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+        <p className="text-muted-foreground">Loading application...</p>
+      </div>
+    );
+  }
+
+  if (error || !application || !property) {
     return (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-semibold mb-2">Application Not Found</h3>
+            <h3 className="font-semibold mb-2">{error || 'Application Not Found'}</h3>
             <Button onClick={() => navigate('/applications')}>Back to Applications</Button>
           </CardContent>
         </Card>
     );
   }
 
+  const tenantInfo = null;
+  const rentalHistory = [];
+
   const handleDecision = async (action) => {
     setIsProcessing(true);
-    await new Promise((resolve) => setTimeout(resolve, 600));
-    setIsProcessing(false);
-    toast({
-      title: `Application ${action}`,
-      description: 'Notification sent to tenant.',
-      variant: action === 'approved' ? 'success' : 'info',
-    });
-    navigate('/applications/list');
+    try {
+      if (action === 'approved') {
+        await api.post(`/applications/${application.id}/approve`);
+      } else {
+        await api.post(`/applications/${application.id}/reject`);
+      }
+      toast({
+        title: `Application ${action}`,
+        description: 'Notification sent to tenant.',
+        variant: action === 'approved' ? 'success' : 'info',
+      });
+      navigate('/applications/list');
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Action failed', description: 'Please try again.', variant: 'error' });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (

@@ -1,12 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
 import { Label } from './Components/ui/label.jsx';
-import { mockProperties } from './data/mockData.js';
 import { ArrowLeft, AlertCircle, Check, FileText, Info, Upload, X } from 'lucide-react';
 import { useToast } from './Components/ToastContext.jsx';
+import api from './axios.js';
 
 const requiredDocuments = [
   { key: 'spaAgreement', label: 'S&P Agreement (Sale & Purchase Agreement)' },
@@ -24,13 +24,30 @@ export default function PropertyVerification() {
   const state = location.state || {};
   const propertyFromState = state.propertyId;
   const propertyDataFromState = state.propertyData;
+  const [fetchedProperty, setFetchedProperty] = useState(propertyDataFromState);
+  const [error, setError] = useState(null);
 
-  const property = useMemo(() => {
-    const found = mockProperties.find((p) => p.id === id) ?? mockProperties.find((p) => p.id === propertyFromState);
-    if (found) return found;
-    if (propertyDataFromState) return propertyDataFromState;
-    return undefined;
-  }, [id, propertyFromState, propertyDataFromState]);
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      if (propertyDataFromState) return;
+      try {
+        const { data } = await api.get(`/properties/${id}`);
+        if (!isMounted) return;
+        setFetchedProperty(data);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Property not found');
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [id, propertyDataFromState]);
+
+  const property = useMemo(() => fetchedProperty, [fetchedProperty]);
 
   const [documents, setDocuments] = useState(() =>
     requiredDocuments.reduce((acc, doc) => {
@@ -110,24 +127,23 @@ export default function PropertyVerification() {
 
   if (!property) {
     return (
-        <div className="max-w-3xl mx-auto space-y-4">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Button>
-          <Card>
-            <CardContent className="py-10 text-center space-y-2">
-              <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
-              <p className="font-semibold">Property not found</p>
-              <p className="text-muted-foreground text-sm">Please start from your properties list.</p>
-            </CardContent>
-          </Card>
-        </div>
+      <div className="max-w-3xl mx-auto space-y-4">
+        <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </Button>
+        <Card>
+          <CardContent className="py-10 text-center space-y-2">
+            <AlertCircle className="h-10 w-10 text-destructive mx-auto" />
+            <p className="font-semibold">Property not found</p>
+            <p className="text-muted-foreground text-sm">Please start from your properties list.</p>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
         <Button variant="ghost" onClick={() => navigate(-1)} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -285,7 +301,6 @@ export default function PropertyVerification() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }
 

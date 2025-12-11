@@ -1,10 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from './Components/ui/button.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from './Components/ui/card.jsx';
 import Badge from './Components/ui/badge.jsx';
 import Separator from './Components/ui/separator.jsx';
-import { mockProperties } from './data/mockData.js';
 import {
   MapPin,
   Bed,
@@ -18,6 +17,7 @@ import {
   Check,
 } from 'lucide-react';
 import { useToast } from './Components/ToastContext.jsx';
+import api from './axios.js';
 
 export default function ListingDetails() {
   const { id } = useParams();
@@ -27,13 +27,45 @@ export default function ListingDetails() {
   const [isApplying, setIsApplying] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const user = { role: 'tenant' }; // mock role
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const property = mockProperties.find((p) => p.id === id);
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await api.get(`/properties/${id}`);
+        if (!isMounted) return;
+        setProperty(data);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Property not found');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
 
-  if (!property) {
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 gap-4">
+        <p className="text-muted-foreground">Loading property...</p>
+      </div>
+    );
+  }
+
+  if (error || !property) {
     return (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
-          <h1 className="text-2xl font-bold">Property Not Found</h1>
+          <h1 className="text-2xl font-bold">{error || 'Property Not Found'}</h1>
           <Button onClick={() => navigate('/properties')}>Back to Properties</Button>
         </div>
     );

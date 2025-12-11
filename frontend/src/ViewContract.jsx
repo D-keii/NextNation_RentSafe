@@ -4,10 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './Com
 import { Button } from './Components/ui/button.jsx';
 import { Badge } from './Components/ui/badge.jsx';
 import StatusBadge from './Components/StatusBadge.jsx';
-import { mockProperties, mockContracts } from './data/mockData.js';
 import { FileText, Shield, ArrowLeft, Check, X, Building2, Calendar, DollarSign, PenTool, Image } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useToast } from './Components/ToastContext.jsx';
+import api from './axios.js';
 
 export default function ViewContract() {
   const { id } = useParams();
@@ -15,17 +15,51 @@ export default function ViewContract() {
   const [isSigning, setIsSigning] = useState(false);
   const { toast } = useToast();
 
-  const contract = mockContracts.find((c) => c.id === id);
-  const property = mockProperties.find((p) => p.id === contract?.propertyId);
+  const [contract, setContract] = useState(null);
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await api.get(`/contracts/${id}`);
+        if (!isMounted) return;
+        setContract(data);
+        setProperty(data.property);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Contract not found');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
   const user = { role: 'landlord', ic: '800515-01-5678' };
   const isLandlord = user?.role === 'landlord';
 
-  if (!contract || !property) {
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in max-w-4xl mx-auto">
+        <p className="text-muted-foreground">Loading contract...</p>
+      </div>
+    );
+  }
+
+  if (error || !contract || !property) {
     return (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-semibold mb-2">Contract Not Found</h3>
+            <h3 className="font-semibold mb-2">{error || 'Contract Not Found'}</h3>
             <Button onClick={() => navigate('/contracts')}>Back to Contracts</Button>
           </CardContent>
         </Card>
@@ -42,14 +76,20 @@ export default function ViewContract() {
 
   const handleSign = async () => {
     setIsSigning(true);
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-    setIsSigning(false);
-    toast({
-      title: 'Contract signed successfully!',
-      description: 'Your digital signature has been embedded with MyDigital ID.',
-      variant: 'success',
-    });
-    navigate('/contracts');
+    try {
+      await api.post(`/contracts/${contract.id}/landlord/sign`);
+      toast({
+        title: 'Contract signed successfully!',
+        description: 'Digital signature recorded.',
+        variant: 'success',
+      });
+      navigate('/contracts');
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Signing failed', description: 'Please try again.', variant: 'error' });
+    } finally {
+      setIsSigning(false);
+    }
   };
 
   return (

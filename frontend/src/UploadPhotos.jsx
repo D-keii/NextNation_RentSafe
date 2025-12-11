@@ -2,10 +2,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
-import { mockProperties, mockContracts } from './data/mockData.js';
 import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Building2 } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useToast } from './Components/ToastContext.jsx';
+import api from './axios.js';
 
 export default function UploadPhotos() {
   const { id } = useParams();
@@ -15,15 +15,49 @@ export default function UploadPhotos() {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
-  const contract = mockContracts.find((c) => c.id === id);
-  const property = mockProperties.find((p) => p.id === contract?.propertyId);
+  const [contract, setContract] = useState(null);
+  const [property, setProperty] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  if (!contract || !property) {
+  useEffect(() => {
+    let isMounted = true;
+    const load = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const { data } = await api.get(`/contracts/${id}`);
+        if (!isMounted) return;
+        setContract(data);
+        setProperty(data.property);
+      } catch (err) {
+        if (!isMounted) return;
+        console.error(err);
+        setError('Contract not found');
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+    load();
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
+        <p className="text-muted-foreground">Loading contract...</p>
+      </div>
+    );
+  }
+
+  if (error || !contract || !property) {
     return (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <ImageIcon className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="font-semibold mb-2">Contract Not Found</h3>
+            <h3 className="font-semibold mb-2">{error || 'Contract Not Found'}</h3>
             <Button onClick={() => navigate('/contracts')}>Back to Contracts</Button>
           </CardContent>
         </Card>
@@ -48,10 +82,16 @@ export default function UploadPhotos() {
       return;
     }
     setIsUploading(true);
-    await new Promise((resolve) => setTimeout(resolve, 800));
-    setIsUploading(false);
-    toast({ title: 'Photos uploaded', description: 'Tenant will be notified to review.', variant: 'success' });
-    navigate('/contracts');
+    try {
+      await api.post(`/contracts/${id}/upload-photos`);
+      toast({ title: 'Photos uploaded', description: 'Tenant will be notified to review.', variant: 'success' });
+      navigate('/contracts');
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Upload failed', description: 'Try again later.', variant: 'error' });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   return (
