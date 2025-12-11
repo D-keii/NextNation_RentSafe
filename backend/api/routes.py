@@ -383,8 +383,7 @@ def add_property():
         description=data.get('description', ''),
         location=full_address,
         price=to_float(data.get('price')),
-        landlord_ic=data.get('landlord_ic', 'UNKNOWN'),
-
+        landlord_ic=data.get('landlord_ic'),
         bedrooms=to_int(data.get('bedrooms', 1), 1),
         bathrooms=to_int(data.get('bathrooms', 1), 1),
         size_sqft=to_int(data.get('size_sqft', data.get('size', 800)), 800),

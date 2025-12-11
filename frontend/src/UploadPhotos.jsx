@@ -1,5 +1,4 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
 import { ArrowLeft, Upload, Image as ImageIcon, Trash2, Building2 } from 'lucide-react';
@@ -95,7 +94,6 @@ export default function UploadPhotos() {
   };
 
   return (
-    <DashboardLayout>
       <div className="space-y-6 animate-fade-in max-w-3xl mx-auto">
         <Button variant="ghost" onClick={() => navigate('/contracts')} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
@@ -206,7 +204,6 @@ export default function UploadPhotos() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   );
 }
 
