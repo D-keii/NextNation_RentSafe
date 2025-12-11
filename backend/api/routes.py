@@ -1,7 +1,8 @@
 from flask import request, url_for, jsonify, redirect, render_template_string
 from . import api_bp
 from db.db import db
-from db.db_tables import User, TenantPreference, Listing, SavedListing, RentalApplication
+from db.db_tables import User, TenantPreference, Listing, SavedListing, RentalApplication, Contract
+from datetime import datetime
 # Genrate unique session id
 import uuid
 import json
@@ -193,3 +194,81 @@ def get_applications(tenant_ic):
         "message": a.message,
         "status": a.status
     } for a in apps])
+
+# Approve all landlord-uploaded photos for a contract
+@api_bp.route("/contracts/<contract_id>/photos/approve", methods=["POST"])
+def tenant_approve_photos(contract_id):
+    contract = Contract.query.get(contract_id)
+    if not contract:
+        return jsonify({"error": "Contract not found"}), 404
+
+    # if there are no photos uploaded, reject the request
+    photos = contract.property_photos.split(",") if contract.property_photos else []
+    if not photos:
+        return jsonify({"error": "No photos to approve"}), 400
+
+    # mark photos approved and update contract status
+    contract.photos_approved = True
+    # move contract to next state awaiting signature
+    contract.status = "awaiting_tenant_signature"
+    db.session.commit()
+
+    return jsonify({"message": "Photos approved", "status": contract.status}), 200
+
+
+# Reject photos
+@api_bp.route("/contracts/<contract_id>/photos/reject", methods=["POST"])
+def tenant_reject_photos(contract_id):
+    contract = Contract.query.get(contract_id)
+    if not contract:
+        return jsonify({"error": "Contract not found"}), 404
+
+    contract.photos_approved = False
+    contract.status = "photos_rejected_by_tenant"
+    db.session.commit()
+
+    return jsonify({
+        "message": "Photos rejected.",
+        "status": contract.status
+    }), 200
+
+
+# Tenant signs contract (save name, IC, timestamp, document hash)
+@api_bp.route("/contracts/<int:contract_id>/tenant/sign", methods=["POST"])
+def tenant_sign_contract(contract_id):
+    contract = Contract.query.get(contract_id)
+    if not contract:
+        return jsonify({"error": "Contract not found"}), 404
+
+    # Ensure photos were approved before tenant can sign
+    if not contract.photos_approved:
+        return jsonify({"error": "Photos must be approved before signing"}), 400
+
+    data = request.get_json() or {}
+    name = data.get("name")
+    ic = data.get("ic")
+    document_hash = data.get("document_hash")  # optional
+
+    if not name or not ic:
+        return jsonify({"error": "name and ic are required for signing"}), 400
+
+    # Record signature
+    contract.tenant_signature_name = name
+    contract.tenant_signature_ic = ic
+    contract.tenant_signature_at = datetime.utcnow()
+    contract.tenant_document_hash = document_hash
+    contract.tenant_signed = True
+
+    if contract.landlord_signed:
+        contract.status = "signed"
+    else:
+        # tenant has signed; wait for landlord
+        contract.status = "tenant_signed_waiting_landlord"
+
+    db.session.commit()
+
+    return jsonify({
+        "message": "Contract signed by tenant",
+        "contract": contract.to_dict()
+    }), 200
+
