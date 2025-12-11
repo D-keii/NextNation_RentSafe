@@ -1,15 +1,12 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import os
-from db.models import db, Property, Application
-
-# Import the database connection and the Property model we just made
-from db.models import db, Property
+# Correct Import: We need db, Property, AND Application
+from db.models import db, Property, Application 
 
 app = Flask(__name__)
 
-# CONFIGURATION 
-# This creates a file named 'rentsafe.db' in your backend folder
+# --- CONFIGURATION ---
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(os.getcwd(), 'rentsafe.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
@@ -17,7 +14,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 CORS(app)
 
-# ROUTES 
+# --- ROUTES ---
 
 @app.route('/', methods=['GET'])
 def home():
@@ -32,17 +29,22 @@ def add_property():
     if not data or 'title' not in data or 'price' not in data:
         return jsonify({"message": "Error: Title and Price are required"}), 400
 
+    # Handle Address Logic (Combine fields if needed)
+    full_address = data.get('location')
+    if not full_address and 'address' in data:
+        full_address = f"{data['address']}, {data.get('city', '')}, {data.get('state', '')}"
+
     new_property = Property(
         title=data['title'],
         description=data.get('description', ''),
-        location=data.get('location', data.get('address')), # Handle both names
+        location=full_address,
         price=data['price'],
-        landlord_ic=data.get('landlord_ic', 'UNKNOWN'), # Default if missing
+        landlord_ic=data.get('landlord_ic', 'UNKNOWN'),
         
-        # Capture new fields from frontend (with defaults if they don't send them)
-        bedrooms=data.get('noOfBed', data.get('bedrooms', 1)),
-        bathrooms=data.get('noOfToilet', data.get('bathrooms', 1)),
-        size_sqft=data.get('noOfSqft', data.get('size_sqft', 800)),
+        # New fields
+        bedrooms=int(data.get('bedrooms', 1)),
+        bathrooms=int(data.get('bathrooms', 1)),
+        size_sqft=int(data.get('size_sqft', 800)),
         image_url=data.get('imageUrl', None),
         status='available'
     )
@@ -80,33 +82,39 @@ def delete_property(id):
     db.session.commit()
     return jsonify({"message": "Property deleted"}), 200
 
-# TASK 2: PROPERTY RETRIEVAL
+# --- TASK 2: PROPERTY RETRIEVAL ---
 
 # 4. GET ALL Properties
 @app.route('/properties/all', methods=['GET'])
 def get_all_properties():
-    # Fetch all properties from the database
     properties = Property.query.all()
-    
-    # Convert the list of objects into a list of dictionaries (JSON)
     result = [p.to_dict() for p in properties]
-    
     return jsonify(result), 200
 
 # 5. GET SINGLE Property
 @app.route('/properties/<int:id>', methods=['GET'])
 def get_property(id):
-    # Find the property by ID
     property_item = Property.query.get(id)
-    
     if not property_item:
         return jsonify({"message": "Property not found"}), 404
-        
     return jsonify(property_item.to_dict()), 200
 
-# TASK 3: APPLICATION REVIEW 
+# --- TASK 3: APPLICATION REVIEW ---
 
-# 6. GET Application (For Review Page)
+# 6. GET ALL Applications for a Specific Property (THIS WAS MISSING!)
+@app.route('/properties/<int:property_id>/applications', methods=['GET'])
+def get_property_applications(property_id):
+    # Fetch all applications where property_id matches
+    apps = Application.query.filter_by(property_id=property_id).all()
+    
+    # Return empty list if none found, instead of 404
+    if not apps:
+        return jsonify([]), 200
+        
+    result = [app.to_dict() for app in apps]
+    return jsonify(result), 200
+
+# 7. GET Single Application (For Review Page)
 @app.route('/applications/<int:app_id>', methods=['GET'])
 def get_application(app_id):
     application = Application.query.get(app_id)
@@ -114,7 +122,7 @@ def get_application(app_id):
         return jsonify({"message": "Application not found"}), 404
     return jsonify(application.to_dict()), 200
 
-# 7. APPROVE Application
+# 8. APPROVE Application
 @app.route('/applications/<int:app_id>/approve', methods=['POST'])
 def approve_application(app_id):
     application = Application.query.get(app_id)
@@ -125,7 +133,7 @@ def approve_application(app_id):
     db.session.commit()
     return jsonify({"message": "Approved", "application": application.to_dict()}), 200
 
-# 8. REJECT Application
+# 9. REJECT Application
 @app.route('/applications/<int:app_id>/reject', methods=['POST'])
 def reject_application(app_id):
     application = Application.query.get(app_id)
@@ -139,6 +147,6 @@ def reject_application(app_id):
 # --- RUN THE SERVER ---
 if __name__ == '__main__':
     with app.app_context():
-        db.create_all()  # This creates the database file automatically
+        db.create_all()
         print("Database connected and ready.")
     app.run(debug=True, port=5000)
