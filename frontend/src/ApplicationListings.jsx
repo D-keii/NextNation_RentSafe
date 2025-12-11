@@ -19,7 +19,7 @@ export default function ApplicationListings(){
         }
     }
 
-    useState(()=>{
+    useEffect(()=>{
         fetchApplications()
     },[])
 
@@ -45,7 +45,7 @@ export default function ApplicationListings(){
                 ?<div className="flex flex-col space-y-5">
                     {
                         applications.map((application,index)=>(
-                            <LongRectangleListingCardApplications key={index} imageUrl={application.imageUrl} propertyName={application.propertyName} applyDate={application.applyDate} status={application.status} price={application.price} location={application.location}/>
+                            <LongRectangleListingCardApplications key={index} imageUrl={application.photos[0]} propertyName={application.title} applyDate={application.createdAt} status={application.status} price={application.price} location={application.location}/>
                         ))
                     }
                 </div>

@@ -75,7 +75,7 @@ export default function SavedListings (){
             <div className="grid grid-cols-3 gap-5">
                 {
                     listings.map((listing,index)=>(
-                        <SquareListingCard key={index} imageUrl={listing.imageUrl}  monthlyRental={listing.monthlyRental}  name={listing.name}  location={listing.location} noOfBed={listing.noOfBed}  noOfToilet={listing.noOfToilet} noOfSqft={listing.noOfSqft}  isBookMarked={listing.isBookMarked}/>
+                        <SquareListingCard key={index} imageUrl={listing.photos[0]}  monthlyRental={listing.price}  name={listing.title}  location={listing.location} noOfBed={listing.bedrooms}  noOfToilet={listing.bathrooms} noOfSqft={listing.size}/>
                     ))
                 }
             </div>
