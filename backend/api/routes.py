@@ -1,7 +1,7 @@
 from flask import request, url_for, jsonify, redirect, render_template_string
 from . import api_bp
 from db.db import db
-from db.db_tables import User, TenantPreference, Listing, SavedListing, RentalApplication, Contract, Escrow, Property, Application
+from db.db_tables import User, TenantPreference, SavedListing, Contract, Escrow, Property, Application
 from datetime import datetime, timedelta
 # Genrate unique session id
 import uuid
@@ -109,29 +109,34 @@ def get_recommended():
 
     prefs = TenantPreference.query.filter_by(user_id=user_id).first()
 
-    query = Listing.query
+    query = Property.query
 
     if prefs:
         if prefs.preferred_location:
             query = query.filter_by(location=prefs.preferred_location)
         if prefs.min_rent:
-            query = query.filter(Listing.monthly_rental >= prefs.min_rent)
+            query = query.filter(Property.price >= prefs.min_rent)
         if prefs.max_rent:
-            query = query.filter(Listing.monthly_rental <= prefs.max_rent)
+            query = query.filter(Property.price <= prefs.max_rent)
         if prefs.min_bedrooms:
-            query = query.filter(Listing.no_bed >= prefs.min_bedrooms)
+            query = query.filter(Property.bedrooms >= prefs.min_bedrooms)
 
     results = query.limit(10).all()
 
     return jsonify([{
         "id": l.id,
-        "name": l.name,
+        "title": l.title,
+        "description": l.description,
         "location": l.location,
-        "monthlyRental": l.monthly_rental,
-        "noOfBed": l.no_bed,
-        "noOfToilet": l.no_toilet,
-        "noOfSqft": l.sqft,
-        "imageUrl": l.image_url
+        "price": l.price,
+        "landlord_ic": l.landlord_ic,
+        "bedrooms": l.bedrooms,
+        "bathrooms": l.bathrooms,
+        "size_sqft": l.size_sqft,
+        "property_type": l.property_type,
+        "amenities": l.amenities,
+        "imageUrl": l.image_url,
+        "status": l.status
     } for l in results])
 
 # Tenant get to favourite the listing and also remove from fav
@@ -169,10 +174,10 @@ def create_application():
         return jsonify({"error": "Tenant not found. User must login first."}), 404
 
     # 2. Create application record
-    application = RentalApplication(
+    application = Application(
         tenant_ic = tenant_ic,
+        tenant_name = tenant.name,
         property_id = property_id,
-        message = message
     )
     db.session.add(application)
     db.session.commit()
@@ -185,7 +190,7 @@ def create_application():
 # Get all the applications by the tenant
 @api_bp.route("/applications/<tenant_ic>", methods=["GET"])
 def get_applications(tenant_ic):
-    apps = RentalApplication.query.filter_by(tenant_ic=tenant_ic).all()
+    apps = Application.query.filter_by(tenant_ic=tenant_ic).all()
 
     return jsonify([{
         "application_id": a.id,
@@ -292,7 +297,7 @@ def create_escrow():
     escrow = Escrow(
         contract_id=contract_id,
         amount=amount,
-        status="holding"
+        status="pending"
     )
     db.session.add(escrow)
 
@@ -312,7 +317,7 @@ def escrow_request_release(escrow_id):
     if not escrow:
         return jsonify({"error": "Escrow not found"}), 404
 
-    if escrow.status != "holding":
+    if escrow.status != "pending":
         return jsonify({"error": "Escrow already processed"}), 400
 
     escrow.status = "release_requested"

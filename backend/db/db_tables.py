@@ -23,22 +23,12 @@ class User(db.Model):
         }
 
 # Tenant Dashboard
-class Listing(db.Model):
-    __tablename__ = "listings"
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(200))
-    location = db.Column(db.String(200))
-    monthly_rental = db.Column(db.Integer)
-    no_bed = db.Column(db.Integer)
-    no_toilet = db.Column(db.Integer)
-    sqft = db.Column(db.Integer)
-    image_url = db.Column(db.String(300))
 
 class SavedListing(db.Model):
     __tablename__= "saved_listings"
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"))
+    listing_id = db.Column(db.Integer, db.ForeignKey("properties.id"))
 
 class TenantPreference(db.Model):
     __tablename__ = "tenant_preferences"
@@ -51,13 +41,13 @@ class TenantPreference(db.Model):
     min_bedrooms = db.Column(db.Integer, nullable=True)
 
 # Tenant apply to rent
-class RentalApplication(db.Model):
-    __tablename__ = "rental_applications"
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
-    listing_id = db.Column(db.Integer, db.ForeignKey("listings.id"))
-    apply_date = db.Column(db.Date)
-    status = db.Column(db.String(50))
+# class RentalApplication(db.Model):
+#     __tablename__ = "rental_applications"
+#     id = db.Column(db.Integer, primary_key=True)
+#     user_id = db.Column(db.Integer, db.ForeignKey("users.id"))
+#     listing_id = db.Column(db.Integer, db.ForeignKey("properties.id"))
+#     apply_date = db.Column(db.Date)
+#     status = db.Column(db.String(50))
 
 class Property(db.Model):
     __tablename__ = 'properties'
