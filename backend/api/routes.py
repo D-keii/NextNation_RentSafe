@@ -1,7 +1,7 @@
 from flask import request, url_for, jsonify, redirect, render_template_string
 from . import api_bp
 from db.db import db
-from db.db_tables import User, TenantPreference, Listing, SavedListing, RentalApplication, Contract
+from db.db_tables import User, TenantPreference, Listing, SavedListing, RentalApplication, Contract, Escrow, Property, Application
 from datetime import datetime
 # Genrate unique session id
 import uuid
@@ -272,7 +272,76 @@ def tenant_sign_contract(contract_id):
         "contract": contract.to_dict()
     }), 200
 
+# Tenant creates escrow payment
+@api_bp.route("/escrow/create", methods=["POST"])
+def create_escrow():
+    data = request.get_json()
 
+    contract_id = data.get("contract_id")
+    amount = data.get("amount")
+
+    contract = Contract.query.get(contract_id)
+    if not contract:
+        return jsonify({"error": "Contract not found"}), 404
+
+    # prevent double creation
+    existing = Escrow.query.filter_by(contract_id=contract_id).first()
+    if existing:
+        return jsonify({"error": "Escrow already exists"}), 400
+
+    escrow = Escrow(
+        contract_id=contract_id,
+        amount=amount,
+        status="holding"
+    )
+    db.session.add(escrow)
+
+    # Update contract state
+    contract.status = "deposit_paid"
+    db.session.commit()
+
+    return jsonify({
+        "message": "Mock deposit payment created",
+        "escrow": escrow.to_dict()
+    }), 201
+
+# Tenant request deposit release
+@api_bp.route("/escrow/<int:escrow_id>/request-release", methods=["POST"])
+def escrow_request_release(escrow_id):
+    escrow = Escrow.query.get(escrow_id)
+    if not escrow:
+        return jsonify({"error": "Escrow not found"}), 404
+
+    if escrow.status != "holding":
+        return jsonify({"error": "Escrow already processed"}), 400
+
+    escrow.status = "release_requested"
+    db.session.commit()
+
+    return jsonify({
+        "message": "Release request submitted",
+        "escrow": escrow.to_dict()
+    }), 200
+
+# Rental history
+@api_bp.route("/users/<string:ic>/rental-history", methods=["GET"])
+def get_rental_history(ic):
+    # Fetch contracts for this tenant
+    contracts = Contract.query.filter_by(tenant_ic=ic).all()
+
+    result = []
+    for c in contracts:
+        escrow = Escrow.query.filter_by(contract_id=c.id).first()
+
+        result.append({
+            "contract": c.to_dict(),
+            "escrow": escrow.to_dict() if escrow else None
+        })
+
+    return jsonify(result), 200
+
+
+# DEVELOPER B
 @api_bp.route('/', methods=['GET'])
 def home():
     return jsonify({"message": "RentSafe Backend is running!"})
@@ -547,7 +616,6 @@ def get_landlord_dashboard(ic):
         "securedEscrows": [e.to_dict() for e in secured_escrows]
     }), 200
 
-# TASK 8: TENANT HISTORY FOR LANDLORD
 
 @api_bp.route('/landlord/<string:ic>/tenant-history', methods=['GET'])
 def get_landlord_tenant_history(ic):
