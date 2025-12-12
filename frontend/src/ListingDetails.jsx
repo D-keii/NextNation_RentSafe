@@ -26,6 +26,7 @@ export default function ListingDetails() {
     const location = useLocation();
     const searchParams = new URLSearchParams(location.search);
     const hasApplied = searchParams.get("applied") === "true";
+    const isLandlord = searchParams.get("role") === "landlord"
 
   // Zustand store
   const saved = useSavedStore((state) => state.saved);
@@ -118,7 +119,7 @@ export default function ListingDetails() {
               className="h-full w-full object-cover"
             />
             <div className="absolute top-4 right-4 flex gap-2">
-              <Button
+            {!isLandlord && <Button
                 variant="secondary"
                 size="icon"
                 // CRITICAL FIX: Ensure property.id is converted to a number 
@@ -129,7 +130,7 @@ export default function ListingDetails() {
                 <Heart
                   className={`h-4 w-4 transition-all duration-300 ${isSaved ? 'fill-destructive text-destructive scale-110' : 'stroke-muted-foreground'}`}
                 />
-              </Button>
+              </Button>}
             </div>
           </div>
 
@@ -212,7 +213,7 @@ export default function ListingDetails() {
         {/* Sidebar */}
         <div className="space-y-6">
           {/* Apply Card */}
-          <Card>
+        {!isLandlord && <Card>
             <CardHeader>
               <CardTitle>Interested in this property?</CardTitle>
             </CardHeader>
@@ -224,7 +225,7 @@ export default function ListingDetails() {
                   Deposit: RM {(property.price * 2).toLocaleString()} (2 months)
                 </p>
               </div>
-                {!hasApplied &&              
+                {!hasApplied&&              
                 (<Button
                     variant="accent"
                     size="lg"
@@ -242,14 +243,14 @@ export default function ListingDetails() {
                     )}
                   </Button>)
                 }
-              <p className="text-xs text-center text-muted-foreground">
+                <p className="text-xs text-center text-muted-foreground">
                 Your application will be reviewed by the landlord
               </p>
             </CardContent>
-          </Card>
+          </Card>}
 
           {/* Landlord Info */}
-          <Card>
+        {!isLandlord &&<Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
@@ -278,7 +279,7 @@ export default function ListingDetails() {
                 </p>
               </div>
             </CardContent>
-          </Card>
+          </Card>}
 
           {/* Security Notice */}
           <Card className="border-success/20 bg-success/5">

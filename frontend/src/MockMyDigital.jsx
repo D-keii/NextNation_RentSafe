@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import axios from "./axios.js";
 import { UserContext } from "./Context/UserContext.jsx";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "./Components/ToastContext.jsx";
 
 export default function MockMyDigital() {
 
@@ -11,27 +12,53 @@ export default function MockMyDigital() {
     const [searchParams] = useSearchParams();
     const session = searchParams.get("session");
     const {setUserProfile} = useContext(UserContext)
+    const [loginCredentials, setLoginCredentials] = useState({
+        ic: "",
+        password: ""
+    })
     const navigate = useNavigate()
+    const { toast } = useToast()
 
-    const handleLogin = async()=>{
-        if (window.confirm("Are you sure you want to authorize RentSafe to access your identity?")){
-            try{
-                console.log(session)
-                const result  = await axios.get(`/auth/callback?token=${session}`)
-                console.log(result.data)
-                if(result.data){
+    const handleLogin = async () => {
+        if (!loginCredentials.ic || !loginCredentials.password) {
+            toast({
+                title: 'Invalid Credentials',
+                description: 'Please enter correct IC number and password.',
+                variant: 'error'
+            });
+            return; // stop further execution
+        }
+
+        if (window.confirm("Are you sure you want to authorize RentSafe to access your identity?")) {
+            try {
+                console.log(session);
+                const result = await axios.get(`/auth/callback?token=${session}`);
+                console.log(result.data);
+
+                if (result.data) {
                     setUserProfile({
                         ...result.data.profile,
                         user_id: result.data.user_id
-                    })
+                    });
                 }
-                navigate("/register")
-            }
-            catch(err){
-                console.log("Failed to fetch user profile" , err)
+
+                toast({
+                    title: 'Login Successful',
+                    description: 'You have successfully logged in using MyDigital ID.',
+                    variant: 'success'
+                });
+
+                navigate("/register");
+            } catch (err) {
+                console.error(err);
+                toast({
+                    title: 'Login Failed',
+                    description: 'Encountered error when login. Please try again.',
+                    variant: 'error'
+                });
             }
         }
-    }
+    };
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
@@ -46,11 +73,11 @@ export default function MockMyDigital() {
                     <div className="flex flex-col gap-5">
                         <label className="flex flex-col gap-3">
                             <p>IC Number</p>
-                            <input type="text" className="shadow-md w-full h-10 border-1 border-gray-700 rounded-xs p-1" />
+                            <input type="text" className="shadow-md w-full h-10 border-1 border-gray-700 rounded-xs p-1" onChange={(e)=>setLoginCredentials({...loginCredentials, ic:e.target.value})}/>
                         </label>
                         <label  className="flex flex-col gap-3">
                             <p>Password</p>
-                            <input type={passwordType} className="shadow-sm w-full border-1 h-10 border-gray-700 rounded-xs p-1"/>
+                            <input type={passwordType} className="shadow-sm w-full border-1 h-10 border-gray-700 rounded-xs p-1" onChange={(e)=>setLoginCredentials({...loginCredentials , password:e.target.value})}/>
                         </label>
                         <label className="flex flex-row items-center gap-2">
                             <p className="font-semibold">Show Password</p>

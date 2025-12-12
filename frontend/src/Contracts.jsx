@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, useContext } from 'react';
+import { useEffect, useMemo, useState, useContext, use } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
@@ -6,6 +6,7 @@ import StatusBadge from './Components/StatusBadge.jsx';
 import api from './axios.js';
 import { FileText, Check, X, Image } from 'lucide-react';
 import { UserContext } from './Context/UserContext.jsx';
+import { useToast } from './Components/ToastContext.jsx';
 
 const filters = ['all', 'pending', 'active', 'completed'];
 
@@ -20,6 +21,8 @@ export default function Contracts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  const { toast } = useToast()
+
   const loadContracts = async () => {
     setLoading(true);
     setError(null);
@@ -29,12 +32,18 @@ export default function Contracts() {
       let res;
       if (isLandlord) {
         res = await api.get(`/users/${user.ic}/landlord-dashboard`);
-        const mergedContracts = [...res.data.activeContracts, ...res.data.pendingContracts];
+        // Prefer a flat `contracts` array if backend provides it; fall back to older grouped arrays
+        const mergedContracts = res.data.contracts ? res.data.contracts : [...(res.data.activeContracts || []), ...(res.data.pendingContracts || [])];
+        
+        // NOTE: landlord needs a way to sign after tenant signs — UI will show Sign button when appropriate.
         const data = mergedContracts.map(c => ({
           contract: {
             ...c,
-            monthly_rent: c.monthly_rent || 0,
-            deposit_amount: c.deposit_amount || 0,
+            // support both snake_case and camelCase shapes from backend
+            monthly_rent: c.monthly_rent || c.monthlyRent || 0,
+            deposit_amount: c.deposit_amount || c.depositAmount || 0,
+            tenant_ic: c.tenant_ic || c.tenantIc,
+            landlord_ic: c.landlord_ic || c.landlordIc,
           },
           escrow: null,
           property: c.property || { id: null, title: 'Unknown', location: 'Unknown', image_url: '/placeholder.svg', photos: [] },
@@ -97,24 +106,42 @@ export default function Contracts() {
   const handleApprovePhotos = async (contractId) => {
     try {
       await api.post(`/contracts/${contractId}/photos/approve`);
-      alert('Photos approved');
+      toast({
+        title: 'Photos approved',
+        description: 'You have approved the property photos.',
+        variant: 'success',
+      })
       loadContracts(); // refresh after approval
     } catch (err) {
       console.error(err);
-      alert('Failed to approve photos');
+      toast({
+        title: 'Failed to approve photos',
+        description: 'An error occurred while approving photos.',
+        variant: 'error',
+      })
     }
   };
 
   const handleRejectPhotos = async (contractId) => {
     try {
       await api.post(`/contracts/${contractId}/photos/reject`);
-      alert('Photos rejected');
+      toast({
+        title: 'Photos rejected',
+        description: 'You have rejected the property photos.',
+        variant: 'success',
+      })
       loadContracts(); // refresh after rejection
     } catch (err) {
       console.error(err);
-      alert('Failed to reject photos');
+      toast({
+        title: 'Failed to reject photos',
+        description: 'An error occurred while rejecting photos.',
+        variant: 'error',
+      })
     }
   };
+
+  // landlord sign handled from the contract view page
 
   return (
     <div className="space-y-6">
@@ -215,6 +242,7 @@ export default function Contracts() {
                       </Button>
                     </>
                   )}
+
                   <Button variant="outline" size="sm" onClick={() => navigate(`/contracts/${contract.id}`)}>
                     <FileText className="h-4 w-4 mr-1" />
                     View Contract

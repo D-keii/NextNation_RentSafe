@@ -3,16 +3,12 @@ import DashboardLayout from './Components/DashboardLayout.jsx';
 import { Card, CardContent, CardHeader, CardTitle } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
 import StatusBadge from './Components/StatusBadge.jsx';
-import { Wallet, Shield, CreditCard, Smartphone, ArrowRight, Check, Calendar, Building2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from './Components/ui/dialog.jsx';
+import { Wallet, Shield, Check, Calendar, Building2 } from 'lucide-react';
 import { useToast } from './Components/ToastContext.jsx';
 import api from './axios.js';
 import { UserContext } from './Context/UserContext.jsx';
 
 export default function Escrow() {
-  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
-  const [showReleaseDialog, setShowReleaseDialog] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -115,19 +111,10 @@ export default function Escrow() {
       toast({ title: 'Action failed', description: 'Please try again.', variant: 'error' });
     } finally {
       setIsLoading(false);
-      setShowReleaseDialog(false);
     }
   };
 
-  const handlePayment = async () => {
-    toast({
-      title: 'Payment flow not available',
-      description: 'Deposit payment is handled outside this mock UI.',
-      variant: 'info',
-    });
-    setShowPaymentDialog(false);
-    setPaymentMethod(null);
-  };
+
 
   if (loading) {
     return (
@@ -152,9 +139,7 @@ export default function Escrow() {
             <Wallet className="h-6 w-6" />
             Escrow Management
           </h1>
-          <p className="text-muted-foreground">
-            {isLandlord ? 'View and manage tenant deposits' : 'View your deposit status and request releases'}
-          </p>
+          <p className="text-muted-foreground">View and manage tenant deposits</p>
         </div>
 
         <Card className="border-success/20 bg-success/5">
@@ -246,29 +231,13 @@ export default function Escrow() {
                       </div>
 
                       <div className="flex flex-col gap-2 lg:items-end">
-                        {escrow.status === 'pending' && !isLandlord && (
-                          <Button variant="accent" onClick={() => setShowPaymentDialog(true)}>
-                            <CreditCard className="h-4 w-4 mr-2" />
-                            Pay Deposit
-                          </Button>
-                        )}
-                        {escrow.status === 'secured' && !isLandlord && (
-                          <Button
-                            variant="outline"
-                            onClick={() => {
-                              setShowReleaseDialog(true);
-                            }}
-                          >
-                            Request Release
-                            <ArrowRight className="h-4 w-4 ml-2" />
-                          </Button>
-                        )}
+                        
                         {escrow.status === 'release_requested' && isLandlord && (
                           <div className="flex gap-2">
-                            <Button variant="outline" onClick={() => handleReleaseRequest('reject')}>
+                            <Button variant="outline" onClick={() => handleReleaseRequest('reject', escrow.id)}>
                               Dispute
                             </Button>
-                            <Button variant="accent" onClick={() => handleReleaseRequest('approve')}>
+                            <Button variant="accent" onClick={() => handleReleaseRequest('approve', escrow.id)}>
                               <Check className="h-4 w-4 mr-2" />
                               Approve Release
                             </Button>
@@ -276,7 +245,10 @@ export default function Escrow() {
                         )}
                         {escrow.status === 'released' && (
                           <p className="text-sm text-muted-foreground">
-                            Released on {escrow.releasedAt ? new Date(escrow.releasedAt).toLocaleDateString() : 'N/A'}
+                            Released on {(() => {
+                              const d = escrow.releasedAt || escrow.paidAt;
+                              return d ? new Date(d).toLocaleDateString() : 'N/A';
+                            })()}
                           </p>
                         )}
                       </div>
@@ -288,83 +260,9 @@ export default function Escrow() {
           </div>
         )}
 
-        <Dialog open={showPaymentDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                Pay Deposit
-              </DialogTitle>
-              <DialogDescription>Choose your preferred payment method to secure your deposit in escrow.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3 py-4">
-              <button
-                onClick={() => setPaymentMethod('fpx')}
-                className={`w-full p-4 rounded-lg border-2 transition-all flex items-center gap-4 ${
-                  paymentMethod === 'fpx' ? 'border-accent bg-accent/5' : 'border-border hover:border-muted-foreground/30'
-                }`}
-              >
-                <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
-                  <CreditCard className="h-6 w-6" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium">FPX Online Banking</p>
-                  <p className="text-sm text-muted-foreground">Pay directly from your bank</p>
-                </div>
-              </button>
 
-              <button
-                onClick={() => setPaymentMethod('duitnow')}
-                className={`w-full p-4 rounded-lg border-2 transition-all flex items-center gap-4 ${
-                  paymentMethod === 'duitnow' ? 'border-accent bg-accent/5' : 'border-border hover:border-muted-foreground/30'
-                }`}
-              >
-                <div className="h-12 w-12 rounded-lg bg-muted flex items-center justify-center">
-                  <Smartphone className="h-6 w-6" />
-                </div>
-                <div className="text-left">
-                  <p className="font-medium">DuitNow QR</p>
-                  <p className="text-sm text-muted-foreground">Scan and pay with your banking app</p>
-                </div>
-              </button>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
-                Cancel
-              </Button>
-              <Button variant="accent" onClick={handlePayment} disabled={!paymentMethod || isLoading}>
-                {isLoading ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  'Proceed to Payment'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
-        <Dialog open={showReleaseDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Request Deposit Release</DialogTitle>
-              <DialogDescription>
-                By requesting a release, you confirm that the tenancy has ended and you've returned the property in good condition.
-              </DialogDescription>
-            </DialogHeader>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowReleaseDialog(false)}>
-                Cancel
-              </Button>
-              <Button variant="accent" onClick={() => handleReleaseRequest('request')} disabled={isLoading}>
-                {isLoading ? (
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                ) : (
-                  'Submit Request'
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+
       </div>
   );
 }

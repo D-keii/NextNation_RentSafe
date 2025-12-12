@@ -270,7 +270,7 @@ export default function LandlordDashboard() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2 justify-end">
-                      {contract.status === 'pending_photos' && (
+                      {(contract.status === 'pending_photos') && (
                         <>
                           <button
                             onClick={() => navigate(`/contracts/${contract.id}`)}
@@ -285,6 +285,24 @@ export default function LandlordDashboard() {
                           >
                             <Image className="h-4 w-4 inline mr-1" />
                             Upload Photos
+                          </button>
+                        </>
+                      )}
+                      {contract.status === 'photos_rejected_by_tenant' && (
+                        <>
+                          <button
+                            onClick={() => navigate(`/contracts/${contract.id}`)}
+                            className="px-3 py-1.5 border rounded-md text-sm hover:bg-muted transition"
+                          >
+                            <FileText className="h-4 w-4 inline mr-1" />
+                            View Contract
+                          </button>
+                          <button
+                            onClick={() => navigate(`/contracts/${contract.id}/upload-photos`)}
+                            className="px-3 py-1.5 border rounded-md text-sm hover:bg-muted transition"
+                          >
+                            <Image className="h-4 w-4 inline mr-1" />
+                            Re-upload Photos
                           </button>
                         </>
                       )}
@@ -374,7 +392,7 @@ export default function LandlordDashboard() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          navigate(`/listing/${property.id}`);
+                          navigate(`/listing/${property.id}?role=landlord`);
                         }}
                         className="p-2 border rounded-md hover:bg-muted transition"
                         title="View"

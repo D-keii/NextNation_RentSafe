@@ -24,17 +24,22 @@ export default function LongRectangleListingCard({imageUrl , propertyName , appl
     const statusClasses = getStatusClasses();
 
     return(
-        <div className="flex flex-row justify-between items-center border-1 p-3 rounded-xl">
-            <div className="flex flex-row items-center space-x-5">
-                <img src={imageUrl} alt={propertyImage} className="aspect-square max-w-[100px] object-cover rounded-md" />
-                <div>
-                    <p className="text-lg font-semibold">{propertyName}</p>
-                    <p className="text-sm text-muted-foreground">{`Applied on ${applyDate}`}</p>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border p-3 rounded-xl gap-4 sm:gap-0">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
+                <img
+                src={imageUrl}
+                alt={propertyImage}
+                className="w-full sm:w-[100px] aspect-square object-cover rounded-md flex-shrink-0"
+                />
+                <div className="flex flex-col">
+                <p className="text-lg font-semibold truncate">{propertyName}</p>
+                <p className="text-sm text-muted-foreground">{`Applied on ${applyDate}`}</p>
                 </div>
             </div>
-            <div className={`${statusClasses.bg} px-2 rounded-xl`}>
-                <p className={`${statusClasses.text} font-semibold text-transform: capitalize`}>{status}</p>
+            <div className={`${statusClasses.bg} px-3 py-1 rounded-xl mt-2 sm:mt-0`}>
+                <p className={`${statusClasses.text} font-semibold capitalize`}>{status}</p>
             </div>
         </div>
+
     )
 }

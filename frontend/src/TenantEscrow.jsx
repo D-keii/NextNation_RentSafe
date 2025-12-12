@@ -82,7 +82,7 @@ export default function TenantEscrow() {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {escrowSummaryCards.map((card, i) => (
           <div key={i} className="flex flex-row border-2 justify-between p-8 rounded-lg items-center ">
             <div>
@@ -97,38 +97,60 @@ export default function TenantEscrow() {
       </div>
 
       {/* Escrow Records */}
-      <div className="border border-2 rounded-md flex flex-col p-5 space-y-5">
-        <div className='rounded-lg'>
-          <p className='text-2xl flex flex-row items-center font-bold'>Escrow Record</p>
-          <p className='text-muted-foreground'>All your escrow transactions and their current status</p>
+      <div className="border-2 rounded-md flex flex-col p-5 space-y-5">
+        <div>
+          <p className="text-2xl flex items-center font-bold">Escrow Record</p>
+          <p className="text-muted-foreground text-sm">All your escrow transactions and their current status</p>
         </div>
-        <div className='flex flex-col space-y-4'>
+
+        <div className="flex flex-col space-y-4">
           {escrowData.map((e, idx) => (
-            <div key={idx} className='rounded-lg border-2 p-5 flex flex-row justify-between'>
-              <div className="flex flex-row space-x-3">
-                {e.status === 'disputed' ? <AlertCircle className='text-destructive' /> : <Shield className='text-accent' />}
-                <div className='flex flex-col space-y-2'>
-                  <p className='font-bold'>{e.propertyTitle}</p>
-                  <p className='text-muted-foreground'>{e.location}</p>
-                  <div className='flex flex-row space-x-3'>
-                    <div className='rounded-lg px-3 bg-muted-foreground/10 items-center justify-between flex flex-col'>{e.paymentMethod}</div>
-                    {e.paymentDate && <div className='flex flex-row items-center justify-center space-x-2'>
-                      <Calendar className='w-4 h-4'/>
-                      <p className='text-sm'>Paid: {new Date(e.paymentDate).toLocaleDateString()}</p>
-                    </div>}
+            <div
+              key={idx}
+              className="flex flex-col sm:flex-row justify-between border-2 p-4 rounded-lg gap-4 sm:gap-0"
+            >
+              {/* Left side: property info */}
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+                {e.status === 'disputed' ? (
+                  <AlertCircle className="text-destructive w-6 h-6 flex-shrink-0" />
+                ) : (
+                  <Shield className="text-accent w-6 h-6 flex-shrink-0" />
+                )}
+                <div className="flex flex-col gap-1">
+                  <p className="font-bold truncate">{e.propertyTitle}</p>
+                  <p className="text-muted-foreground text-sm">{e.location}</p>
+                  <div className="flex flex-wrap gap-2 items-center">
+                    <div className="rounded-lg px-2 bg-muted-foreground/10">{e.paymentMethod}</div>
+                    {e.paymentDate && (
+                      <div className="flex items-center gap-1 text-sm">
+                        <Calendar className="w-4 h-4" /> Paid: {new Date(e.paymentDate).toLocaleDateString()}
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
-              <div className='flex flex-col items-end space-y-2'>
-                <p className='font-bold text-lg'>RM{e.amount}</p>
-                <div className={`${e.status === 'secured' ? 'text-accent bg-accent/10' : e.status === 'disputed' ? 'text-destructive bg-destructive/20' : 'text-amber-500 bg-amber-100'} p-1 rounded-xl text-sm flex-col flex items-center`}>
+
+              {/* Right side: amount, status, actions */}
+              <div className="flex flex-col sm:items-end gap-2 mt-3 sm:mt-0">
+                <p className="font-bold text-lg">RM{e.amount}</p>
+                <div
+                  className={`p-1 rounded-xl text-sm flex items-center justify-center ${
+                    e.status === 'secured'
+                      ? 'text-accent bg-accent/10'
+                      : e.status === 'disputed'
+                      ? 'text-destructive bg-destructive/20'
+                      : 'text-amber-500 bg-amber-100'
+                  }`}
+                >
                   {e.status.replace('_', ' ').toUpperCase()}
                 </div>
+
                 {(e.status === 'secured' || e.status === 'pending') && e.escrowId && (
                   <button
                     onClick={() => handleRequestRelease(e.escrowId)}
-                    className='flex flex-row rounded-lg border border-2 bg-muted-foreground/10 items-center text-md p-1'>
-                    <ArrowUpRight className='w-5 h-5'/> Request Release
+                    className="flex items-center gap-1 border border-2 bg-muted-foreground/10 p-1 rounded-lg text-sm mt-1"
+                  >
+                    <ArrowUpRight className="w-5 h-5" /> Request Release
                   </button>
                 )}
               </div>
@@ -137,11 +159,14 @@ export default function TenantEscrow() {
         </div>
       </div>
 
-      <div className="border border-2 rounded-md flex flex-row p-5 space-x-5 " >
-        <Shield className=' w-15 h-15'/>
-        <div>
-          <p className='font-bold text-lg'>RentSafe Escrow Protection</p>
-          <p className='text-muted-foreground text-sm'>Your deposit is securely held in escrow until the end of your tenancy. Funds can only be released when both tenant and landlord agree, or through our dispute resolution process. This protects both parties and ensures fair handling of deposits.</p>
+
+      <div className="border-2 rounded-md p-5 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <Shield className="w-12 h-12 flex-shrink-0" />
+        <div className="flex flex-col gap-1">
+          <p className="font-bold text-lg">RentSafe Escrow Protection</p>
+          <p className="text-muted-foreground text-sm">
+            Your deposit is securely held in escrow until the end of your tenancy. Funds can only be released when both tenant and landlord agree, or through our dispute resolution process. This protects both parties and ensures fair handling of deposits.
+          </p>
         </div>
       </div>
     </div>

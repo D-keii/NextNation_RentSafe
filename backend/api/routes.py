@@ -325,10 +325,13 @@ def create_escrow():
     if existing:
         return jsonify({"error": "Escrow already exists"}), 400
 
+    # For this mock flow, creating an escrow represents a completed (secured) payment
     escrow = Escrow(
         contract_id=contract_id,
         amount=amount,
-        status="pending"
+        status="secured",
+        payment_method=data.get("payment_method", "FPX"),
+        paid_at=datetime.utcnow()
     )
     db.session.add(escrow)
 
@@ -348,8 +351,9 @@ def escrow_request_release(escrow_id):
     if not escrow:
         return jsonify({"error": "Escrow not found"}), 404
 
-    if escrow.status != "pending":
-        return jsonify({"error": "Escrow already processed"}), 400
+    # Only allow a release request when funds are secured in escrow
+    if escrow.status != "secured":
+        return jsonify({"error": "Escrow must be secured to request release"}), 400
 
     escrow.status = "release_requested"
     db.session.commit()
@@ -662,6 +666,7 @@ def approve_escrow_release(escrow_id):
         return jsonify({"message": "Escrow record not found"}), 404
 
     escrow.status = 'released'
+    escrow.released_at = datetime.utcnow()
     # In a real app, this would trigger a Bank API transfer
 
     db.session.commit()
@@ -696,7 +701,8 @@ def get_landlord_dashboard(ic):
     active_contracts = Contract.query.filter_by(landlord_ic=ic, status='active').all()
 
     # 4. Pending Contracts (Signatures, Photos, Tenant Approval)
-    pending_statuses = ['pending_signatures', 'pending_photos', 'pending_tenant_approval']
+    # include tenant-signed-but-waiting-for-landlord in the pending group
+    pending_statuses = ['pending_signatures', 'pending_photos', 'pending_tenant_approval', 'tenant_signed_waiting_landlord', 'photos_rejected_by_tenant', 'deposit_paid']
     pending_contracts = Contract.query.filter(
         Contract.landlord_ic == ic,
         Contract.status.in_(pending_statuses)
@@ -714,7 +720,9 @@ def get_landlord_dashboard(ic):
         "pendingApplications": [a.to_dict() for a in pending_apps],
         "activeContracts": [c.to_dict() for c in active_contracts],
         "pendingContracts": [c.to_dict() for c in pending_contracts],
-        "securedEscrows": [e.to_dict() for e in secured_escrows]
+        "securedEscrows": [e.to_dict() for e in secured_escrows],
+        # Provide a flat, stable `contracts` list for clients that prefer a single array
+        "contracts": [c.to_dict() for c in (active_contracts + pending_contracts)]
     }), 200
 
 
@@ -786,3 +794,60 @@ def get_tenant_full_contracts(ic):
         })
 
     return jsonify(result), 200
+
+
+@api_bp.get("/users/<string:ic>/landlord-dashboard")
+def landlord_dashboard(ic):
+    # All contracts where landlord is this user
+    contracts = Contract.query.filter_by(landlord_ic=ic).all()
+
+    grouped = {
+        "pendingPhotos": [],
+        "pendingTenantApproval": [],
+        "awaitingTenantSignature": [],
+        "tenantSignedWaitingLandlord": [],
+        "pendingSignatures": [],
+        "activeContracts": [],
+        "depositPaid": [],
+        "completed": [],
+        "others": []
+    }
+
+    for c in contracts:
+        status = c.status
+
+        if status == "pending_photos":
+            grouped["pendingPhotos"].append(c.to_dict())
+
+        elif status == "pending_tenant_approval":
+            grouped["pendingTenantApproval"].append(c.to_dict())
+
+        elif status == "awaiting_tenant_signature":
+            grouped["awaitingTenantSignature"].append(c.to_dict())
+
+        elif status == "tenant_signed_waiting_landlord":
+            grouped["tenantSignedWaitingLandlord"].append(c.to_dict())
+
+        elif status == "pending_signatures":
+            grouped["pendingSignatures"].append(c.to_dict())
+
+        elif status == "active":
+            grouped["activeContracts"].append(c.to_dict())
+
+        elif status == "deposit_paid":
+            grouped["depositPaid"].append(c.to_dict())
+
+        elif status == "signed":
+            grouped["completed"].append(c.to_dict())
+
+        else:
+            grouped["others"].append(c.to_dict())
+
+        # Also include a flat, stable list of all contracts to simplify client consumption
+        all_contracts = []
+        for lst in grouped.values():
+            all_contracts.extend(lst)
+        grouped["contracts"] = all_contracts
+
+        return jsonify(grouped), 200
+

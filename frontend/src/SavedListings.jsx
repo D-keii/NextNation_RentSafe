@@ -44,17 +44,6 @@ export default function SavedListings() {
         );
     }
 
-    if (!userProfile) {
-        return (
-            <div className="p-5 flex flex-col items-center justify-center h-[50vh] space-y-4">
-                <Heart className="h-10 w-10 text-muted-foreground" />
-                <h1 className="font-bold text-2xl">Sign in to view your saved listings</h1>
-                <p className="text-muted-foreground">Please log in to see the properties you've marked as favorites.</p>
-                <Button onClick={() => navigate('/login')}>Go to Login</Button>
-            </div>
-        );
-    }
-
     if (savedProperties.length === 0) {
         return (
             <div className="p-5 flex flex-col items-center justify-center h-[50vh] space-y-4">
@@ -79,7 +68,7 @@ export default function SavedListings() {
                 {savedProperties.map((listing) => (
                     <SquareListingCard 
                         key={listing.id}
-                        propertyId={listing.id} // ✅ Correct prop name
+                        propertyId={listing.id} 
                         imageUrl={listing.photos[0] || '/placeholder.svg'} 
                         monthlyRental={listing.price} 
                         name={listing.title} 

@@ -179,6 +179,7 @@ class Escrow(db.Model):
     status = db.Column(db.String(50), default='pending')
     payment_method = db.Column(db.String(50), nullable=True)  # FPX, DuitNow
     paid_at = db.Column(db.DateTime, nullable=True)
+    released_at = db.Column(db.DateTime, nullable=True)
 
     contract = db.relationship('Contract', backref=db.backref('escrow', uselist=False))
 
@@ -189,6 +190,7 @@ class Escrow(db.Model):
             'amount': self.amount,
             'status': self.status,
             'paymentMethod': self.payment_method,
-            'paidAt': self.paid_at.isoformat() if self.paid_at else None
+            'paidAt': self.paid_at.isoformat() if self.paid_at else None,
+            'releasedAt': self.released_at.isoformat() if self.released_at else None
         }
 

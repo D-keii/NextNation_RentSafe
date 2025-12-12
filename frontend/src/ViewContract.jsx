@@ -2,7 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './Components/ui/card.jsx';
 import { Button } from './Components/ui/button.jsx';
 import { Badge } from './Components/ui/badge.jsx';
-import { FileText, Shield, ArrowLeft, Check, X, Building2, Calendar, DollarSign, PenTool, Image } from 'lucide-react';
+import { FileText, Shield, ArrowLeft, Check, X, Building2, Calendar, CreditCard,DollarSign, PenTool, Image } from 'lucide-react';
 import { useEffect, useState, useContext } from 'react';
 import { useToast } from './Components/ToastContext.jsx';
 import { UserContext } from './Context/UserContext.jsx';
@@ -18,6 +18,8 @@ export default function ViewContract() {
   const [property, setProperty] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isSigning, setIsSigning] = useState(false);
+  const [escrow, setEscrow] = useState(null);
+  const [isPaying, setIsPaying] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -34,6 +36,13 @@ export default function ViewContract() {
         if (!isMounted) return;
         setContract(data);
         setProperty(data.property);
+        // fetch escrow status for this contract
+        try {
+          const escrowRes = await api.get(`/escrow/${data.id}`);
+          if (isMounted) setEscrow(escrowRes.data);
+        } catch (e) {
+          console.warn('Failed to fetch escrow status', e);
+        }
       } catch (err) {
         if (!isMounted) return;
         console.error(err);
@@ -60,7 +69,7 @@ export default function ViewContract() {
   // Determine actions
   const canSign =
     contract.photosApproved &&
-    ((isLandlord && contract.tenantSigned && !contract.landlordSigned && contract.status === 'pending_signatures') ||
+    ((isLandlord && contract.tenantSigned && !contract.landlordSigned && (contract.status === 'pending_signatures' || contract.status === 'tenant_signed_waiting_landlord')) ||
      (!isLandlord && !contract.tenantSigned && (contract.status === 'pending_signatures' || contract.status === 'awaiting_tenant_signature')));
 
   const canApprovePhotos = !contract.photosApproved && !isLandlord && contract.status === 'pending_tenant_approval';
@@ -73,9 +82,18 @@ export default function ViewContract() {
       const endpoint = isLandlord
         ? `/contracts/${contract.id}/landlord/sign`
         : `/contracts/${contract.id}/tenant/sign`;
-      await api.post(endpoint, { name: user.name, ic: user.ic });
+      const res = await api.post(endpoint, { name: user.name, ic: user.ic });
+      // Prefer returned contract payload, otherwise refetch
+      const updated = res?.data?.contract ? res.data.contract : (await api.get(`/contracts/${contract.id}`)).data;
+      setContract(updated);
       toast({ title: 'Contract signed successfully!', description: 'Digital signature recorded.', variant: 'success' });
-      navigate('/contracts');
+      // If tenant signed, return to contracts list; if landlord signed, keep viewing
+      if (!isLandlord) navigate('/contracts');
+      // refresh escrow status after possible state changes
+      try {
+        const escrowRes = await api.get(`/escrow/${contract.id}`);
+        setEscrow(escrowRes.data);
+      } catch (e) { /* ignore */ }
     } catch (err) {
       console.error(err);
       toast({ title: 'Signing failed', description: 'Please try again.', variant: 'error' });
@@ -106,6 +124,23 @@ export default function ViewContract() {
       console.error(err);
       toast({ title: 'Rejection failed', variant: 'error' });
     } finally { setIsApproving(false); }
+  };
+
+  // Handle make payment (tenant)
+  const handleMakePayment = async () => {
+    setIsPaying(true);
+    try {
+      const payload = { contract_id: contract.id, amount: contract.depositAmount };
+      const res = await api.post('/escrow/create', payload);
+      setEscrow(res.data.escrow);
+      // update contract locally to reflect deposit_paid state
+      setContract({ ...contract, status: 'deposit_paid' });
+      toast({ title: 'Payment recorded', description: 'Deposit created', variant: 'success' });
+      navigate('/tenant-escrow', { state: { highlightContractId: contract.id } });
+    } catch (err) {
+      console.error(err);
+      toast({ title: 'Payment failed', description: 'Please try again.', variant: 'error' });
+    } finally { setIsPaying(false); }
   };
 
   return (
@@ -191,16 +226,34 @@ export default function ViewContract() {
       )}
 
       {/* Signing */}
-      {canSign && (
+      {(canSign || (contract.tenantSigned && contract.landlordSigned)) && (
         <Card className="border-accent/20 bg-accent/5">
           <CardContent className="p-6 flex justify-between items-center">
             <div>
-              <p className="font-semibold mb-1">Ready to Sign</p>
-              <p className="text-sm text-muted-foreground">{contract.photosApproved ? 'You can now sign this contract.' : 'Please approve photos first.'}</p>
+              <p className="font-semibold mb-1">{contract.tenantSigned && contract.landlordSigned ? 'Contract Signed' : 'Ready to Sign'}</p>
+              <p className="text-sm text-muted-foreground">
+                {contract.tenantSigned && contract.landlordSigned
+                  ? 'This contract has been signed by both parties.'
+                  : (isLandlord && contract.status === 'tenant_signed_waiting_landlord'
+                    ? 'Tenant has signed — you can now sign this contract.'
+                    : (contract.photosApproved ? 'You can now sign this contract.' : 'Please approve photos first.'))}
+              </p>
             </div>
-            <Button variant="accent" onClick={handleSign} disabled={isSigning}>
-              {isSigning ? 'Signing...' : <><Shield className="h-4 w-4 mr-2" />Sign via MyDigital ID</>}
-            </Button>
+            {/* If both have signed, tenant can make payment when not yet paid; hide CTA for landlord. */}
+            {contract.tenantSigned && contract.landlordSigned ? (
+              isLandlord ? null : (
+                // tenant view: show Make Payment if escrow not yet created/paid (no escrow id)
+                (!escrow || !escrow.id) ? (
+                  <Button onClick={handleMakePayment} disabled={isPaying}>
+                    {isPaying ? 'Processing...' : <><CreditCard className="h-4 w-4 mr-2" />Make Payment</>}
+                  </Button>
+                ) : null
+              )
+            ) : (
+              <Button onClick={handleSign} disabled={isSigning}>
+                {isSigning ? 'Signing...' : <><Shield className="h-4 w-4 mr-2" />Sign via MyDigital ID</>}
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
