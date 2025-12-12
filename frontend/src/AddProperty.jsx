@@ -379,12 +379,26 @@ export default function AddProperty() {
                     accept="image/*"
                     multiple
                     className="hidden"
-                    onChange={(e) => {
+                   onChange={async (e) => {
                       const files = e.target.files;
                       if (!files || files.length === 0) return;
-                      const previews = Array.from(files).map((file) => URL.createObjectURL(file));
-                      setPhotos((prev) => [...prev, ...previews]);
-                      toast({ title: `${files.length} photo(s) added`, variant: 'info' });
+                      // const previews = Array.from(files).map((file) => URL.createObjectURL(file));
+                      // setPhotos((prev) => [...prev, ...previews]);
+                      // toast({ title: `${files.length} photo(s) added`, variant: 'info' });
+                      // Convert files to base64 data URLs
+                      const base64Promises = Array.from(files).map((file) => {
+                        return new Promise((resolve) => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => resolve(reader.result);
+                          reader.onerror = () => resolve(null);
+                          reader.readAsDataURL(file);
+                        });
+                      });
+                      
+                      const base64Urls = await Promise.all(base64Promises);
+                      const validUrls = base64Urls.filter(Boolean);
+                      setPhotos((prev) => [...prev, ...validUrls]);
+                      toast({ title: `${validUrls.length} photo(s) added`, variant: 'info' });
                     }}
                   />
                   <div
@@ -394,14 +408,28 @@ export default function AddProperty() {
                       e.preventDefault();
                       e.stopPropagation();
                     }}
-                    onDrop={(e) => {
+                    onDrop={async (e) => {
                       e.preventDefault();
                       e.stopPropagation();
                       const dropped = e.dataTransfer.files;
                       if (!dropped || dropped.length === 0) return;
-                      const previews = Array.from(dropped).map((file) => URL.createObjectURL(file));
-                      setPhotos((prev) => [...prev, ...previews]);
-                      toast({ title: `${dropped.length} photo(s) added`, variant: 'info' });
+                      // const previews = Array.from(dropped).map((file) => URL.createObjectURL(file));
+                      // setPhotos((prev) => [...prev, ...previews]);
+                      // toast({ title: `${dropped.length} photo(s) added`, variant: 'info' });
+                      // Convert files to base64 data URLs
+                      const base64Promises = Array.from(dropped).map((file) => {
+                        return new Promise((resolve) => {
+                          const reader = new FileReader();
+                          reader.onloadend = () => resolve(reader.result);
+                          reader.onerror = () => resolve(null);
+                          reader.readAsDataURL(file);
+                        });
+                      });
+                      
+                      const base64Urls = await Promise.all(base64Promises);
+                      const validUrls = base64Urls.filter(Boolean);
+                      setPhotos((prev) => [...prev, ...validUrls]);
+                      toast({ title: `${validUrls.length} photo(s) added`, variant: 'info' });
                     }}
                   >
                     <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-3" />
