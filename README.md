@@ -66,7 +66,7 @@ RentSafe allows users to browse rental properties, apply for listings, save favo
 
 5. **Run the Flask server:**
     ```bash
-    flask run
+     python .\app.py
     ```
     By default, the backend runs on `http://127.0.0.1:8889`.
 
