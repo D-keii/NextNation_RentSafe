@@ -1,5 +1,5 @@
 from app import app
-from db.models import db, Property, Contract, Escrow
+from db.db_tables import db, Property, Contract, Escrow
 from datetime import datetime
 
 def seed():
