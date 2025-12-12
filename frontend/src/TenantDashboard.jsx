@@ -3,10 +3,13 @@ import { Link } from "react-router-dom"
 import SquareListingCard from "./Components/SquareListingCard.jsx"
 import LongRectangleListingCard from "./Components/LongRectangleListingCard.jsx"
 import {UserContext} from './Context/UserContext.jsx'
-import { useContext } from "react"
+import { useContext, useEffect, useState} from "react"
+import axios from './axios.js'
 export default function TenantDashboard(){
 
     const {userProfile} = useContext(UserContext)
+    const [properties,setProperties] = useState([])
+    const [applications ,setApplications] = useState([])
 
     const dashboardSummaryCards = [
         {
@@ -20,7 +23,7 @@ export default function TenantDashboard(){
         {
             title:"Applications",
             icon:Newspaper,
-            number:1,
+            number:applications.length,
             color: 'text-warning',
             href:"/applications"
         },
@@ -34,6 +37,34 @@ export default function TenantDashboard(){
         }
     ]
 
+    const fetchProperties = async()=>{
+        try{
+            const results = await axios.get("/properties/all")
+            setProperties(results.data)
+            console.log(results.data)
+        }
+        catch(err){
+            console.error("Failed to fetch properties")
+        }
+    }
+
+    const fetchApplications = async()=>{
+        try{
+            const results = await axios.get(`/applications/${userProfile.ic}`)
+            setApplications(results.data)
+            console.log(results.data)
+        }
+        catch(err){
+            console.error("Failed to fetch user applications" ,err)
+        }
+    }
+
+    useEffect(()=>{
+        fetchProperties()
+        fetchApplications()
+    },[])
+
+
 
     return(
         <div className="p-10 flex flex-col space-y-7">
@@ -42,7 +73,7 @@ export default function TenantDashboard(){
                     <h1 className="text-2xl font-bold">{`Welcome Back, ${userProfile.name}!`}</h1>
                     <p className="text-muted-foreground">Find your perfect rental today.</p>
                 </div>
-                <Link to="all-listings" className="flex flex-row bg-accent items-center text-white font-semibold rounded-md p-1.5"><Search className="w-5 h-5 mr-3"/> Browse All Listings</Link>
+                <Link to="/all-listings" className="flex flex-row bg-accent items-center text-white font-semibold rounded-md p-1.5"><Search className="w-5 h-5 mr-3"/> Browse All Listings</Link>
             </div>
             <div className="grid grid-cols-3 gap-4">
                 {
@@ -81,8 +112,8 @@ export default function TenantDashboard(){
                 </div>
                 <div className="grid grid-cols-3 gap-5">
                     {
-                        recommendListings.map((recommendListing , index)=>(
-                            <SquareListingCard key={index} imageUrl={recommendListing.imageUrl}  monthlyRental={recommendListing.monthlyRental}  name={recommendListing.name}  location={recommendListing.location} noOfBed={recommendListing.noOfBed}  noOfToilet={recommendListing.noOfToilet} noOfSqft={recommendListing.noOfSqft}  isBookMarked={recommendListing.isBookMarked}/>
+                        properties.slice(0,3).map((recommendListing , index)=>(
+                            <SquareListingCard key={index} imageUrl={recommendListing.photos[0]}  monthlyRental={recommendListing.price}  name={recommendListing.title}  location={recommendListing.location} noOfBed={recommendListing.bedrooms}  noOfToilet={recommendListing.bathrooms} noOfSqft={recommendListing.size}/>
                         ))
                     }
                 </div>
@@ -90,7 +121,7 @@ export default function TenantDashboard(){
             <div className="flex flex-col space-y-3">
                 <h2 className="text-2xl font-bold">Pending Applications</h2>
                 {
-                    rentalApplications.map((rentalApplication , index)=>(
+                    applications.map((rentalApplication , index)=>(
                         <LongRectangleListingCard key={index} imageUrl={rentalApplication.photos[0]} propertyName={rentalApplication.title} applyDate={rentalApplication.createdAt} status={rentalApplication.status}/>
                     ))
                 }

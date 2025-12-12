@@ -166,6 +166,7 @@ def create_application():
 
     tenant_ic = data.get("tenant_ic")
     property_id = data.get("property_id")
+    message = data.get("message")
 
     # 1. Ensure user exists (already verified via MyDigitalID)
     tenant = User.query.filter_by(ic=tenant_ic).first()
@@ -195,6 +196,7 @@ def get_applications(tenant_ic):
         "application_id": a.id,
         "tenant_ic": a.tenant_ic,
         "property_id": a.property_id,
+        "message": a.message,
         "status": a.status
     } for a in apps])
 

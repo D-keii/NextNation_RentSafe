@@ -26,7 +26,7 @@ export function DashboardLayout({ children }) {
     { href: '/saved', label: 'Saved Listings', icon: Heart },
     { href: '/applications', label: 'Applications', icon: ClipboardList },
     { href: '/contracts', label: 'Contracts', icon: FileText },
-    { href: '/escrow', label: 'Escrow', icon: Wallet },
+    { href: '//tenant-escrow', label: 'Escrow', icon: Wallet },
   ];
 
   const landlordLinks = [

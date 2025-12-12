@@ -9,6 +9,8 @@ import TenantDashboard from './TenantDashboard.jsx'
 import SavedListings from './SavedListings.jsx'
 import ApplicationListings from './ApplicationListings.jsx'
 import TenantEscrow from './TenantEscrow.jsx'
+import AllListings from './AllListings.jsx'
+import ListingDetails from './ListingDetails.jsx'
 
 import LandlordDashboard from './LandlordDashboard.jsx'
 import Properties from './Properties.jsx'
@@ -51,6 +53,8 @@ function AppRoutes(){
         <Route path="/saved" element={<SavedListings/>}/>
         <Route path="/applications" element={<ApplicationListings/>}/>
         <Route path="/tenant-escrow" element={<TenantEscrow/>}/>
+        <Route path="/all-listings" element = {<AllListings/>}/>
+        <Route path="/listing/:id" element={<ListingDetails/>}/>
 
         {/* Landlord flows */}
         <Route path="/properties" element={<Properties/>}/>
