@@ -34,7 +34,7 @@ export function DashboardLayout({ children }) {
     { href: '/properties', label: 'My Properties', icon: Building2 },
     { href: '/applications/list', label: 'Applications', icon: ClipboardList },
     { href: '/contracts', label: 'Contracts', icon: FileText },
-    { href: '/escrow', label: 'Escrow', icon: Wallet },
+    // { href: '/escrow', label: 'Escrow', icon: Wallet },
   ];
 
   const links = userProfile?.role === 'landlord' ? landlordLinks : tenantLinks;

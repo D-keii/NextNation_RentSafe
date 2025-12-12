@@ -59,6 +59,7 @@ function AppRoutes(){
         {/* Landlord flows */}
         <Route path="/properties" element={<Properties/>}/>
         <Route path="/properties/new" element={<AddProperty/>}/>
+        <Route path="/properties/:id" element={<ListingDetails/>}/>
         <Route path="/properties/:id/edit" element={<AddProperty/>}/>
         <Route path="/properties/:id/verification" element={<PropertyVerification/>}/>
 
