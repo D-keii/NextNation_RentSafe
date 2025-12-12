@@ -10,12 +10,32 @@ export default function TenantDashboard(){
     const {userProfile} = useContext(UserContext)
     const [properties,setProperties] = useState([])
     const [applications ,setApplications] = useState([])
+    const [savedProperties, setSavedProperties] = useState([]);
+
+    useEffect(() => {
+        const fetchSavedProperties = async (userId) => {
+            try {
+                const response = await axios.get(`/listings/saved/${userId}`); 
+                setSavedProperties(response.data);
+            } catch (err) {
+                console.error("Failed to fetch detailed saved properties:", err);
+                setSavedProperties([]);
+            }
+        };
+
+        if (userProfile?.user_id) {
+            fetchSavedProperties(userProfile.user_id);
+        } else {
+            setSavedProperties([]);
+            setIsLoading(false);
+        }
+    }, [userProfile]);
 
     const dashboardSummaryCards = [
         {
             title:"Saved Listings",
             icon:Heart,
-            number:1,
+            number:savedProperties.length,
             color: 'text-destructive',
             href: "/saved"
         },
