@@ -88,7 +88,7 @@ RentSafe allows users to browse rental properties, apply for listings, save favo
     ```bash
     npm start
     ```
-    By default, the frontend runs on `http://localhost:3000` and will proxy API requests to Flask if configured.
+    By default, the frontend runs on `http://localhost:5173` and will proxy API requests to Flask if configured.
 
 ---
 
