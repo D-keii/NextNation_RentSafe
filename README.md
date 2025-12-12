@@ -29,7 +29,7 @@ RentSafe allows users to browse rental properties, apply for listings, save favo
 
 - **Frontend:** React, Tailwind CSS, React Router, Axios, Lucide-React
 - **Backend:** Python, Flask, Flask SQLAlchemy, Flask CORS
-- **Database:** SQLite (default), can switch to PostgreSQL
+- **Database:** SQLite (default)
 - **Others:** JSON for configuration and data storage
 
 ---
