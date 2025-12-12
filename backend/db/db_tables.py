@@ -88,8 +88,7 @@ class Property(db.Model):
             'photos': photos,
             'available': self.status == 'available',
             'status': self.status or 'unverified',
-            # Default verification shape so frontend badges render (pending by default)
-            'verification': {'status': 'pending'},
+            'verification': {'status': 'verified' if self.status == 'verified' else 'pending'},
             'landlordIc': self.landlord_ic,
             'createdAt': self.created_at.isoformat() if self.created_at else None
         }
