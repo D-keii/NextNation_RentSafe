@@ -764,3 +764,25 @@ def get_landlord_tenant_history(ic):
 
     return jsonify(history_data), 200
 
+
+# GET full contract info for a tenant
+@api_bp.route('/users/<string:ic>/contracts-full', methods=['GET'])
+def get_tenant_full_contracts(ic):
+    # Fetch all contracts for this tenant
+    contracts = Contract.query.filter_by(tenant_ic=ic).all()
+    result = []
+
+    for c in contracts:
+        # Get property info safely
+        property_info = c.property.to_dict() if c.property else None
+
+        # Get escrow info safely
+        escrow_info = c.escrow.to_dict() if c.escrow else None
+
+        result.append({
+            "contract": c.to_dict(),
+            "property": property_info,
+            "escrow": escrow_info
+        })
+
+    return jsonify(result), 200
