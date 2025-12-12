@@ -45,6 +45,10 @@ export default function Contracts() {
             return acc;
           }, {})
         );
+        if (isLandlord) {
+          const withoutEscrow = deduped.map((contract) => ({ contract, escrow: null }));
+          if (isMounted) setContracts(withoutEscrow);
+        } else {
         const withEscrow = await Promise.all(
           deduped.map(async (contract) => {
             try {
@@ -56,6 +60,7 @@ export default function Contracts() {
           })
         );
         if (isMounted) setContracts(withEscrow);
+      }
       } catch (err) {
         if (!isMounted) return;
         console.error(err);
@@ -76,13 +81,18 @@ export default function Contracts() {
   }, [user.ic, isLandlord]);
 
   const categorizeContract = (contract) => {
-    const escrow = contracts.find((e) => e.contract.id === contract.id)?.escrow;
+    // const escrow = contracts.find((e) => e.contract.id === contract.id)?.escrow;
+    const escrow = isLandlord ? null : contracts.find((e) => e.contract.id === contract.id)?.escrow;
     const today = new Date();
     const endDate = new Date(contract.endDate);
     if (contract.status === 'completed' || (endDate < today && (escrow?.status === 'released' || escrow?.status === 'release_requested'))) {
       return 'completed';
     }
-    if (contract.status === 'active' && escrow?.status === 'secured') {
+    // if (contract.status === 'active' && escrow?.status === 'secured') {
+    if (contract.status === 'active' && (!isLandlord && escrow?.status === 'secured')) {
+      return 'active';
+    }
+    if (contract.status === 'active' && isLandlord) {
       return 'active';
     }
     return 'pending';
@@ -186,7 +196,7 @@ export default function Contracts() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm text-muted-foreground">Contract:</span>
                           <StatusBadge status={contract.status} />
-                          {escrow && (
+                          {!isLandlord && escrow && (
                             <>
                               <span className="text-sm text-muted-foreground">Escrow:</span>
                               <StatusBadge status={escrow.status} />

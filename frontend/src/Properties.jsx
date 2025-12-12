@@ -189,7 +189,7 @@ export default function Properties() {
                         <p className="text-sm text-muted-foreground line-clamp-2">{property.description}</p>
                       </div>
                       <div className="flex items-center gap-2 flex-wrap mt-4">
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/listing/${property.id}`)}>
+                        <Button variant="outline" size="sm" onClick={() => navigate(`/properties/${property.id}`)}>
                           <Eye className="h-4 w-4 mr-2" />
                           View
                         </Button>

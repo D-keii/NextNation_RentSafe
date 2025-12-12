@@ -19,7 +19,7 @@ export default function LandlordDashboard() {
     pendingApplications: [],
     activeContracts: [],
     pendingContracts: [],
-    securedEscrows: [],
+    // securedEscrows: [],
   });
 
   useEffect(() => {
@@ -35,7 +35,7 @@ export default function LandlordDashboard() {
           pendingApplications: data?.pendingApplications || [],
           activeContracts: data?.activeContracts || [],
           pendingContracts: data?.pendingContracts || [],
-          securedEscrows: data?.securedEscrows || [],
+          // securedEscrows: data?.securedEscrows || [],
         });
       } catch (err) {
         if (!isMounted) return;
@@ -51,16 +51,16 @@ export default function LandlordDashboard() {
     };
   }, [landlordIc]);
 
-  const { myProperties, pendingApplications, activeContracts, pendingContracts, securedEscrows } = dashboardData;
+  const { myProperties, pendingApplications, activeContracts, pendingContracts} = dashboardData;
 
   const monthlyIncome = useMemo(
     () => activeContracts.reduce((sum, c) => sum + (Number(c.monthlyRent) || 0), 0),
     [activeContracts]
   );
-  const totalEscrowAmount = useMemo(
-    () => securedEscrows.reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
-    [securedEscrows]
-  );
+  // const totalEscrowAmount = useMemo(
+  //   () => securedEscrows.reduce((sum, e) => sum + (Number(e.amount) || 0), 0),
+  //   [securedEscrows]
+  // );
 
   const verificationStatus = (property) => {
     if (property.status === 'verified') return 'verified';
@@ -87,7 +87,7 @@ export default function LandlordDashboard() {
     { label: 'My Properties', value: myProperties.length, icon: Building2, href: '/properties', color: 'text-primary' },
     { label: 'Pending Applications', value: pendingApplications.length, icon: Users, href: '/applications/list', color: 'text-warning' },
     { label: 'Active Contracts', value: activeContracts.length, icon: FileText, href: '/contracts', color: 'text-info' },
-    { label: 'Escrow', value: `RM ${totalEscrowAmount.toLocaleString()}`, icon: Wallet, href: '/escrow', color: 'text-success' },
+    // { label: 'Escrow', value: `RM ${totalEscrowAmount.toLocaleString()}`, icon: Wallet, href: '/escrow', color: 'text-success' },
   ];
 
   if (loading) {
