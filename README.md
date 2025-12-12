@@ -113,13 +113,3 @@ RentSafe allows users to browse rental properties, apply for listings, save favo
 
 ---
 
-## Environment Variables
-
-Create a `.env` file in the **backend** folder for any sensitive config:
-
-```env
-FLASK_APP=app.py
-FLASK_ENV=development
-SECRET_KEY=your_secret_key
-DATABASE_URL=sqlite:///rentsafe.db
-
