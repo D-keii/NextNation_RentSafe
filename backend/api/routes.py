@@ -159,6 +159,35 @@ def save_listing():
 
     return jsonify({"message": "Added to saved listings"})
 
+# OPTIMIZED VERSION (Using JOIN/Subquery loading)
+
+from sqlalchemy.orm import relationship, aliased
+
+@api_bp.route("/listings/saved/<int:user_id>", methods=["GET"])
+def get_saved_listings(user_id):
+    # Retrieve the full Property objects directly by joining SavedListing and filtering.
+    # This executes a single, highly efficient query.
+    
+    # 1. Get the IDs of all properties saved by the user in one subquery
+    saved_ids = db.session.query(SavedListing.listing_id).filter(
+        SavedListing.user_id == user_id
+    ).subquery()
+    
+    # 2. Query the Property table for all properties whose IDs are in the saved_ids list
+    properties = Property.query.filter(
+        Property.id.in_(saved_ids)
+    ).all()
+
+    # Create the list of dictionaries for JSON response
+    listings = [p.to_dict() for p in properties]
+    
+    return jsonify(listings), 200
+
+# NOTE: The exact SQLAlchemy syntax (like using db.session.query or relationship loading) 
+# depends on your specific model definitions and ORM configuration.
+# If you have established a relationship between User, SavedListing, and Property models, 
+# the solution may be even simpler using joined loading.
+
 # Create rental application
 @api_bp.route("/applications/create", methods=["POST"])
 def create_application():
