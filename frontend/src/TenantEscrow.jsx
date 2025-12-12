@@ -20,7 +20,6 @@ export default function TenantEscrow(){
             amount:100,
             color: 'text-emerald-500',
             bg:'bg-emerald-500/10',
-            href: "/saved"
         },
 
         {
@@ -29,7 +28,6 @@ export default function TenantEscrow(){
             amount:3000,
             color: 'text-amber-500',
             bg:'bg-amber-500/10',
-            href:"/applications"
         },
 
         {
@@ -38,7 +36,6 @@ export default function TenantEscrow(){
             amount:100,
             color: 'text-blue-500',
             bg:'bg-blue-500/10',
-            href:"/tenant-escrow"
         }
     ]   
     return(
@@ -50,17 +47,15 @@ export default function TenantEscrow(){
             <div className="grid grid-cols-3 gap-4">
                 {
                     escrowSummaryCards.map((escrowSummaryCard,index)=>(
-                        <Link to={escrowSummaryCard.href} key={index}>
-                            <div className="flex flex-row border-2 justify-between p-8 rounded-lg items-center ">
-                                <div>
-                                    <p>{escrowSummaryCard.title}</p>
-                                    <h1 className="font-bold text-3xl">{`RM ${escrowSummaryCard.amount}`}</h1>
-                                </div>
-                                <div className={`rounded-lg ${escrowSummaryCard.bg} p-3`}>
-                                    {<escrowSummaryCard.icon className={`${escrowSummaryCard.color}`}/>}
-                                </div>
+                        <div key={index} className="flex flex-row border-2 justify-between p-8 rounded-lg items-center ">
+                            <div>
+                                <p>{escrowSummaryCard.title}</p>
+                                <h1 className="font-bold text-3xl">{`RM ${escrowSummaryCard.amount}`}</h1>
                             </div>
-                        </Link>
+                            <div className={`rounded-lg ${escrowSummaryCard.bg} p-3`}>
+                                {<escrowSummaryCard.icon className={`${escrowSummaryCard.color}`}/>}
+                            </div>
+                        </div>
                     ))
                 }
             </div>

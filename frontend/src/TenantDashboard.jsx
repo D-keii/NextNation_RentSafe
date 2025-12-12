@@ -113,7 +113,7 @@ export default function TenantDashboard(){
                 <div className="grid grid-cols-3 gap-5">
                     {
                         properties.slice(0,3).map((recommendListing , index)=>(
-                            <SquareListingCard key={index} imageUrl={recommendListing.photos[0]}  monthlyRental={recommendListing.price}  name={recommendListing.title}  location={recommendListing.location} noOfBed={recommendListing.bedrooms}  noOfToilet={recommendListing.bathrooms} noOfSqft={recommendListing.size}/>
+                            <SquareListingCard key={index} propertyId={recommendListing.id} imageUrl={recommendListing.photos[0]}  monthlyRental={recommendListing.price}  name={recommendListing.title}  location={recommendListing.location} noOfBed={recommendListing.bedrooms}  noOfToilet={recommendListing.bathrooms} noOfSqft={recommendListing.size}/>
                         ))
                     }
                 </div>
