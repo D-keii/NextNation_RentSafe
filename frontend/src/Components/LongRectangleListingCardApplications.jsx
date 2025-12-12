@@ -1,6 +1,7 @@
 import propertyImage from "../img/property-image.jpg"
 import { Building,Calendar,ArrowRight } from "lucide-react";
-export default function LongRectangleListingCardApplications({imageUrl , propertyName , applyDate , status , price , location}){
+import { Link } from "react-router-dom";
+export default function LongRectangleListingCardApplications({propertyId , imageUrl , propertyName , applyDate , status , price , location}){
 
     const getStatusClasses = () => {
         if (status === "approved") {
@@ -41,7 +42,7 @@ export default function LongRectangleListingCardApplications({imageUrl , propert
                     <h2 className="text-accent font-bold text-xl">{`RM ${price}/month`}</h2>
                 </div>
             </div>
-            <button className="mr-5 flex flex-row border-2 p-3 rounded-md b-muted cursor-pointer">View Property <ArrowRight className="ml-3"/></button>
+            <Link to={`/listing/${propertyId}?applied=true`} className="mr-5 flex flex-row border-2 p-3 rounded-md b-muted cursor-pointer">View Property <ArrowRight className="ml-3"/></Link>
         </div>
     )
 }

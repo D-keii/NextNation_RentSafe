@@ -3,6 +3,7 @@ import LongRectangleListingCardApplications from "./Components/LongRectangleList
 import axios from './axios.js'
 import { useState,useEffect,useContext } from "react"
 import { UserContext } from "./Context/UserContext.jsx"
+import propertyImage from "./img/property-image.jpg"
 export default function ApplicationListings(){
 
     const {userProfile} = useContext(UserContext)
@@ -45,7 +46,7 @@ export default function ApplicationListings(){
                 ?<div className="flex flex-col space-y-5">
                     {
                         applications.map((application,index)=>(
-                            <LongRectangleListingCardApplications key={index} imageUrl={application.photos[0]} propertyName={application.title} applyDate={application.createdAt} status={application.status} price={application.price} location={application.location}/>
+                            <LongRectangleListingCardApplications key={index} propertyId ={application.property.id} imageUrl={application.property?.photos[0] || propertyImage} propertyName={application.property.title} applyDate={application.property.createdAt.split('T')[0]} status={application.property.status} price={application.property.price} location={application.property.location}/>
                         ))
                     }
                 </div>

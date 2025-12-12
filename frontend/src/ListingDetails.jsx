@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useContext } from 'react';
 import axios from "./axios.js";
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate ,useLocation } from 'react-router-dom';
 import { useToast } from './Components/ToastContext.jsx';
 import { Button } from './Components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
@@ -22,6 +22,10 @@ export default function ListingDetails() {
   const [isApplying, setIsApplying] = useState(false);
   const [property, setProperty] = useState();
   const { userProfile } = useContext(UserContext);
+
+    const location = useLocation();
+    const searchParams = new URLSearchParams(location.search);
+    const hasApplied = searchParams.get("applied") === "true";
 
   // Zustand store
   const saved = useSavedStore((state) => state.saved);
@@ -220,22 +224,24 @@ export default function ListingDetails() {
                   Deposit: RM {(property.price * 2).toLocaleString()} (2 months)
                 </p>
               </div>
-              <Button
-                variant="accent"
-                size="lg"
-                className="w-full"
-                onClick={handleApply}
-                disabled={isApplying}
-              >
-                {isApplying ? (
-                  <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                    Submitting...
-                  </>
-                ) : (
-                  'Apply to Rent'
-                )}
-              </Button>
+                {!hasApplied &&              
+                (<Button
+                    variant="accent"
+                    size="lg"
+                    className="w-full"
+                    onClick={handleApply}
+                    disabled={isApplying}
+                  >
+                    {isApplying ? (
+                      <>
+                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Submitting...
+                      </>
+                    ) : (
+                      'Apply to Rent'
+                    )}
+                  </Button>)
+                }
               <p className="text-xs text-center text-muted-foreground">
                 Your application will be reviewed by the landlord
               </p>

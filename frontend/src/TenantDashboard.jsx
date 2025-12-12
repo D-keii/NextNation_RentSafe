@@ -141,8 +141,8 @@ export default function TenantDashboard(){
             <div className="flex flex-col space-y-3">
                 <h2 className="text-2xl font-bold">Pending Applications</h2>
                 {
-                    applications.map((rentalApplication , index)=>(
-                        <LongRectangleListingCard key={index} imageUrl={rentalApplication.photos[0]} propertyName={rentalApplication.title} applyDate={rentalApplication.createdAt} status={rentalApplication.status}/>
+                    applications.map((application , index)=>(
+                        <LongRectangleListingCard key={index} imageUrl={application.property?.photos[0]} propertyName={application.property.title} applyDate={application.property.createdAt.split('T')[0]} status={application.property.status}/>
                     ))
                 }
             </div>

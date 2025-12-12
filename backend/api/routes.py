@@ -216,18 +216,20 @@ def create_application():
         "application_id": application.id
     })
 
-# Get all the applications by the tenant
 @api_bp.route("/applications/<tenant_ic>", methods=["GET"])
 def get_applications(tenant_ic):
     apps = Application.query.filter_by(tenant_ic=tenant_ic).all()
-
-    return jsonify([{
-        "application_id": a.id,
-        "tenant_ic": a.tenant_ic,
-        "property_id": a.property_id,
-        "message": a.message,
-        "status": a.status
-    } for a in apps])
+    return jsonify([
+        {
+            "application_id": a.id,
+            "tenant_ic": a.tenant_ic,
+            "tenant_name": a.tenant_name,
+            "status": a.status,
+            "appliedAt": a.applied_at.isoformat(),
+            "property": a.property.to_dict() if a.property else None
+        }
+        for a in apps
+    ])
 
 # Approve all landlord-uploaded photos for a contract
 @api_bp.route("/contracts/<contract_id>/photos/approve", methods=["POST"])
